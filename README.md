@@ -62,6 +62,20 @@ cd frontend && npm run dev
 
 首次抠图时会下载 U2Net 模型（约 176MB），请保持网络畅通。
 
+## GitHub Pages 预览（分享给朋友）
+
+项目已配置 GitHub Actions，推送 `main` 分支后自动构建并部署到 GitHub Pages。
+
+**首次使用需在仓库开启 Pages：**
+
+1. 打开 https://github.com/systemchester/FrameRonin/settings/pages
+2. 在 **Build and deployment** 下，**Source** 选择 **GitHub Actions**
+3. 保存后，下次推送到 `main` 会自动部署
+
+**访问地址：** https://systemchester.github.io/FrameRonin/
+
+> 说明：当前部署的是纯前端。「视频转序列帧」依赖后端 API，在 Pages 上无法使用；「像素图片处理」可完全在浏览器内使用。
+
 ## Docker 部署
 
 ```bash
