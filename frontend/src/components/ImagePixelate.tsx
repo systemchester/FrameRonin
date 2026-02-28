@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, InputNumber, message, Slider, Space, Typography, Upload } from 'antd'
-import { BlockOutlined, DownloadOutlined } from '@ant-design/icons'
+import { DownloadOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd'
 import { useLanguage } from '../i18n/context'
 
@@ -118,9 +118,12 @@ export default function ImagePixelate() {
       <Dragger
         accept={IMAGE_ACCEPT.join(',')}
         maxCount={1}
-        maxSize={IMAGE_MAX_MB * 1024 * 1024}
         fileList={file ? [{ uid: '1', name: file.name } as UploadFile] : []}
         beforeUpload={(f) => {
+          if (f.size > IMAGE_MAX_MB * 1024 * 1024) {
+            message.error(t('imageSizeError'))
+            return false
+          }
           setFile(f)
           setResultUrl((old) => {
             if (old) URL.revokeObjectURL(old)
