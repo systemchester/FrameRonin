@@ -79,7 +79,7 @@ function App() {
           <div className="app-header-bg" aria-hidden="true" />
           <div className="app-header-content">
             <div className="app-header-left">
-              <img src="/logopix.png" alt="FrameRonin" className="app-header-logo" />
+              <img src={`${import.meta.env.BASE_URL}logopix.png`} alt="FrameRonin" className="app-header-logo" />
               <div className="app-header-text">
                 <div className="app-header-row">
                   <h1 className="app-header-brand">FrameRonin</h1>
@@ -166,7 +166,7 @@ function App() {
               <span className="app-footer-sep">·</span>
               <span className="app-footer-powered">
                 {t('poweredBy')}{' '}
-                <img src="/ronincat.png" alt="RoninCat" className="app-footer-avatar" />
+                <img src={`${import.meta.env.BASE_URL}ronincat.png`} alt="RoninCat" className="app-footer-avatar" />
                 <strong>RoninCat</strong>
               </span>
             </div>
