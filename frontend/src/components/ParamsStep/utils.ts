@@ -84,7 +84,7 @@ export function formatTime(sec: number): string {
 }
 
 export function resizeFrameToCanvas(
-  img: HTMLImageElement,
+  img: HTMLImageElement | ImageBitmap,
   targetW: number,
   targetH: number,
   padding: number
@@ -104,6 +104,34 @@ export function resizeFrameToCanvas(
   ctx.clearRect(0, 0, targetW, targetH)
   ctx.drawImage(img, x, y, w, h)
   return canvas
+}
+
+/** 将帧缩放至目标尺寸（与 resizeFrameToCanvas 逻辑一致），用于描边前缩小以加速 */
+export async function resizeFrameToBlob(
+  blob: Blob,
+  targetW: number,
+  targetH: number,
+  padding: number
+): Promise<Blob> {
+  const img = await (typeof createImageBitmap === 'function'
+    ? createImageBitmap(blob)
+    : new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image()
+        const url = URL.createObjectURL(blob)
+        im.onload = () => { URL.revokeObjectURL(url); resolve(im) }
+        im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ERR_IMAGE_LOAD')) }
+        im.src = url
+      }))
+  const canvas = resizeFrameToCanvas(img, targetW, targetH, padding)
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)
+  })
+}
+
+const YIELD_BATCH = 8000
+
+function yieldToMain(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 0))
 }
 
 export async function applyInnerStroke(blob: Blob, strokeWidth: number, strokeColor: string): Promise<Blob> {
@@ -136,43 +164,58 @@ export async function applyInnerStroke(blob: Blob, strokeWidth: number, strokeCo
 
   const INF = 0xffff
   const dist = new Uint16Array(w * h)
-  for (let i = 0; i < w * h; i++) {
-    dist[i] = data[i * 4 + 3]! <= alphaTransparent ? 0 : INF
+  const total = w * h
+  for (let i = 0; i < total; i += YIELD_BATCH) {
+    const end = Math.min(i + YIELD_BATCH, total)
+    for (let j = i; j < end; j++) {
+      dist[j] = data[j * 4 + 3]! <= alphaTransparent ? 0 : INF
+    }
+    if (end < total) await yieldToMain()
   }
 
   const queue: number[] = []
-  for (let i = 0; i < w * h; i++) {
+  for (let i = 0; i < total; i++) {
     if (dist[i] === 0) queue.push(i)
   }
   const dx = [-1, -1, -1, 0, 0, 1, 1, 1]
   const dy = [-1, 0, 1, -1, 1, -1, 0, 1]
   while (queue.length > 0) {
-    const idx = queue.shift()!
-    const d = dist[idx]
-    const x = idx % w
-    const y = (idx / w) | 0
-    for (let k = 0; k < 8; k++) {
-      const nx = x + dx[k]!
-      const ny = y + dy[k]!
-      if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
-      const ni = ny * w + nx
-      if (dist[ni] !== INF) continue
-      dist[ni] = d + 1
-      queue.push(ni)
+    let processed = 0
+    while (queue.length > 0 && processed < YIELD_BATCH) {
+      const idx = queue.shift()!
+      const d = dist[idx]
+      const x = idx % w
+      const y = (idx / w) | 0
+      for (let k = 0; k < 8; k++) {
+        const nx = x + dx[k]!
+        const ny = y + dy[k]!
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue
+        const ni = ny * w + nx
+        if (dist[ni] !== INF) continue
+        dist[ni] = d + 1
+        queue.push(ni)
+      }
+      processed++
     }
+    if (queue.length > 0) await yieldToMain()
   }
 
   const stroked = new Uint8Array(w * h)
-  for (let i = 0; i < w * h; i++) {
-    const d = dist[i]
-    if (d >= 1 && d <= strokeWidth) {
-      data[i * 4] = sr
-      data[i * 4 + 1] = sg
-      data[i * 4 + 2] = sb
-      data[i * 4 + 3] = 255
-      stroked[i] = 1
+  for (let i = 0; i < total; i += YIELD_BATCH) {
+    const end = Math.min(i + YIELD_BATCH, total)
+    for (let j = i; j < end; j++) {
+      const d = dist[j]
+      if (d >= 1 && d <= strokeWidth) {
+        data[j * 4] = sr
+        data[j * 4 + 1] = sg
+        data[j * 4 + 2] = sb
+        data[j * 4 + 3] = 255
+        stroked[j] = 1
+      }
     }
+    if (end < total) await yieldToMain()
   }
+
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = y * w + x
@@ -190,7 +233,9 @@ export async function applyInnerStroke(blob: Blob, strokeWidth: number, strokeCo
         }
       }
     }
+    if (y % 32 === 0) await yieldToMain()
   }
+
   ctx.putImageData(imageData, 0, 0)
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)

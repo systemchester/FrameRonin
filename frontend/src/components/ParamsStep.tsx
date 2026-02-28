@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DownloadOutlined, ExpandOutlined, ReloadOutlined, RetweetOutlined, UndoOutlined } from '@ant-design/icons'
-import { Button, Col, ColorPicker, Divider, Form, Input, InputNumber, message, Progress, Radio, Row, Slider, Space, Spin, Typography } from 'antd'
+import { Button, Col, ColorPicker, Divider, Form, Input, InputNumber, message, Modal, Progress, Radio, Row, Slider, Space, Spin, Typography } from 'antd'
 import JSZip from 'jszip'
 import type { JobParams } from '../api'
 import { useLanguage } from '../i18n/context'
@@ -14,6 +14,7 @@ import {
   applyInnerStroke,
   composeSpriteSheetClient,
   formatTime,
+  resizeFrameToBlob,
   resizeFrameToCanvas,
 } from './ParamsStep/utils'
 
@@ -520,7 +521,12 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
   }
 
   const [exporting, setExporting] = useState(false)
-  const [exportedPreview, setExportedPreview] = useState<{ rawPngBlob: Blob; index: object } | null>(null)
+  const [exportedPreview, setExportedPreview] = useState<{
+    rawPngBlob: Blob
+    index: object
+    composeParams: { targetW: number; targetH: number; padding: number; spacing: number; columns: number; timestamps: number[] }
+  } | null>(null)
+  const [strokeProgress, setStrokeProgress] = useState(0)
   const [exportFileName, setExportFileName] = useState('sprite_sheet')
   const [strokeWidth, setStrokeWidth] = useState(0)
   const [strokeColor, setStrokeColor] = useState('#000000')
@@ -567,7 +573,11 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
         columns,
         resizeFrameToCanvas
       )
-      setExportedPreview({ rawPngBlob: rawBlob, index })
+      setExportedPreview({
+        rawPngBlob: rawBlob,
+        index,
+        composeParams: { targetW, targetH, padding, spacing, columns, timestamps },
+      })
       setDisplayedPngBlob(rawBlob)
       setDisplayPngUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
@@ -584,10 +594,45 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
   const applyStrokeAndGenerate = async () => {
     if (!exportedPreview?.rawPngBlob) return
     setStrokeApplying(true)
+    setStrokeProgress(0)
     try {
-      const blob = strokeWidth > 0
-        ? await applyInnerStroke(exportedPreview.rawPngBlob, strokeWidth, strokeColor)
-        : exportedPreview.rawPngBlob
+      let blob: Blob
+      if (strokeWidth > 0 && exportedPreview.composeParams && mattedFrames.length > 0) {
+        const { targetW, targetH, padding, spacing, columns, timestamps } = exportedPreview.composeParams
+        const CONCURRENCY = 4
+        const strokedFrames: { blob: Blob; dataUrl: string }[] = new Array(mattedFrames.length)
+        const urlsToRevoke: string[] = []
+        for (let i = 0; i < mattedFrames.length; i += CONCURRENCY) {
+          const batch = mattedFrames.slice(i, i + CONCURRENCY).map(async (f) => {
+            const resized = await resizeFrameToBlob(f.blob, targetW, targetH, padding)
+            return applyInnerStroke(resized, strokeWidth, strokeColor)
+          })
+          const results = await Promise.all(batch)
+          for (let j = 0; j < results.length; j++) {
+            const strokedBlob = results[j]!
+            const dataUrl = URL.createObjectURL(strokedBlob)
+            urlsToRevoke.push(dataUrl)
+            strokedFrames[i + j] = { blob: strokedBlob, dataUrl }
+          }
+          setStrokeProgress(Math.round(((Math.min(i + CONCURRENCY, mattedFrames.length)) / mattedFrames.length) * 100))
+        }
+        const { pngBlob } = await composeSpriteSheetClient(
+          strokedFrames,
+          timestamps,
+          targetW,
+          targetH,
+          padding,
+          spacing,
+          columns,
+          resizeFrameToCanvas
+        )
+        urlsToRevoke.forEach(URL.revokeObjectURL)
+        blob = pngBlob
+      } else {
+        blob = strokeWidth > 0
+          ? await applyInnerStroke(exportedPreview.rawPngBlob, strokeWidth, strokeColor)
+          : exportedPreview.rawPngBlob
+      }
       setDisplayedPngBlob(blob)
       setDisplayPngUrl((old) => {
         if (old) URL.revokeObjectURL(old)
@@ -598,6 +643,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
       message.error(t('strokeApplyFailed') + ': ' + formatError(e, t))
     } finally {
       setStrokeApplying(false)
+      setStrokeProgress(0)
     }
   }
 
@@ -1630,6 +1676,23 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
           )
         })()}
 
+      <Modal
+        open={strokeApplying}
+        footer={null}
+        closable={false}
+        maskClosable={false}
+        centered
+        width={340}
+      >
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16, fontSize: 15 }}>{t('extracting')}</div>
+          {strokeProgress > 0 && (
+            <Progress percent={strokeProgress} size="small" style={{ marginTop: 12, maxWidth: 240, margin: '12px auto 0' }} />
+          )}
+          <div style={{ marginTop: 8, fontSize: 12, color: '#8c8c8c' }}>{t('strokeWaitHint')}</div>
+        </div>
+      </Modal>
     </div>
     </Form>
   )
