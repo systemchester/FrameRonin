@@ -1,0 +1,13 @@
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.5.0
+redis>=5.0.0
+rq>=1.15.0
+ffmpeg-python>=0.2.0
+rembg>=2.0.50
+pillow>=10.0.0
+python-magic-bin>=0.4.14;sys_platform=="win32"
+python-magic>=0.4.27;sys_platform!="win32"
+aiofiles>=23.2.0
+httpx>=0.25.0

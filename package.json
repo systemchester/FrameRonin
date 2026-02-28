@@ -1,0 +1,9 @@
+{
+  "name": "pixelwork",
+  "private": true,
+  "scripts": {
+    "dev:api": "uvicorn backend.app.main:app --reload --port 8000",
+    "dev:worker": "rq worker pixelwork --url redis://localhost:6379/0",
+    "dev:frontend": "cd frontend && npm run dev"
+  }
+}

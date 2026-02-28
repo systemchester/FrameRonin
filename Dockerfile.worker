@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ ./backend/
+COPY worker/ ./worker/
+
+ENV PYTHONPATH=/app
+ENV UPLOAD_DIR=/app/uploads
+ENV OUTPUT_DIR=/app/outputs
+ENV TEMP_DIR=/app/temp
+
+# API 与 Worker 共享 volume，路径需一致
+CMD ["rq", "worker", "pixelwork", "--url", "redis://redis:6379/0"]
