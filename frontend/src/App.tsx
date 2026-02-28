@@ -6,8 +6,11 @@ import enUS from 'antd/locale/en_US'
 import jaJP from 'antd/locale/ja_JP'
 import type { ThemeConfig } from 'antd'
 import { useLanguage } from './i18n/context'
+import GifFrameConverter from './components/GifFrameConverter'
+import ImagePixelate from './components/ImagePixelate'
 import ImageResizeStroke from './components/ImageResizeStroke'
 import ModeSelector, { type AppMode } from './components/ModeSelector'
+import SpriteSheetTool from './components/SpriteSheetTool'
 import ParamsStep from './components/ParamsStep'
 import UploadStep from './components/UploadStep'
 import type { JobParams } from './api'
@@ -119,6 +122,45 @@ function App() {
                 </Button>
               </div>
               <ImageResizeStroke />
+            </Card>
+          ) : mode === 'gif' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <GifFrameConverter />
+            </Card>
+          ) : mode === 'spritesheet' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <SpriteSheetTool />
+            </Card>
+          ) : mode === 'pixelate' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <ImagePixelate />
             </Card>
           ) : (
             <>
