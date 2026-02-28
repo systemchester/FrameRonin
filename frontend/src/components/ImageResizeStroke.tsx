@@ -240,7 +240,7 @@ export default function ImageResizeStroke() {
           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
             {t('imgOriginalSize')}: {originalSize.w} × {originalSize.h}
           </Text>
-          <Row gutter={24} align="flex-start">
+          <Row gutter={24} align="top">
             <Col xs={24} md={14}>
               <ImageCropEditor
                 imageUrl={originalUrl}
