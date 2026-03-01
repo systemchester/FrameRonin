@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n/context'
 
 const { Text } = Typography
 
-const GEM_URL = 'https://gemini.google.com/gem/7dca9f93a7a9?usp=sharing'
+const GEM_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
 
 export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'pixelate' | null
 
