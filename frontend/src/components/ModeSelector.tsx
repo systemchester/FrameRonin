@@ -4,7 +4,8 @@ import { useLanguage } from '../i18n/context'
 
 const { Text } = Typography
 
-const GEM_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
+const GEM_V2_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
+const GEM_V3_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
 
 export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'pixelate' | null
 
@@ -40,33 +41,55 @@ export default function ModeSelector({ onSelect }: Props) {
           </Card>
         </Col>
       </Row>
-      <Row gutter={24} style={{ marginTop: 8 }}>
-      <Col xs={24} sm={{ flex: '1 1 0' }} style={{ display: 'flex', minWidth: 0 }}>
-        <a
-          href={GEM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
-          title={t('moduleGem')}
-        >
-          <Card
-            hoverable
-            bodyStyle={{ padding: '12px 16px' }}
-            style={{
-              textAlign: 'center',
-              cursor: 'pointer',
-              borderColor: '#9a8b78',
-              flex: 1,
-              minHeight: 140,
-            }}
+      <Row gutter={24} style={{ marginTop: 8 }} justify="center">
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
+          <a
+            href={GEM_V2_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
+            title={t('moduleGemV2')}
           >
-            <ThunderboltOutlined style={{ fontSize: 32, color: '#b55233', marginBottom: 8 }} />
-            <div style={{ lineHeight: 1.4 }}>
-              <Text strong style={{ fontSize: 13 }}>{t('moduleGem')}</Text>
-            </div>
-          </Card>
-        </a>
-      </Col>
+            <Card
+              hoverable
+              bodyStyle={{ padding: '12px 16px' }}
+              style={{ textAlign: 'center', cursor: 'pointer', borderColor: '#9a8b78', flex: 1, minHeight: 140 }}
+            >
+              <ThunderboltOutlined style={{ fontSize: 32, color: '#b55233', marginBottom: 8 }} />
+              <div style={{ lineHeight: 1.4 }}>
+                <Text strong style={{ fontSize: 13 }}>{t('moduleGemV2')}</Text>
+              </div>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 11, lineHeight: 1.35 }}>
+                {t('moduleGemV2Desc')}
+              </Text>
+            </Card>
+          </a>
+        </Col>
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
+          <a
+            href={GEM_V3_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
+            title={t('moduleGem')}
+          >
+            <Card
+              hoverable
+              bodyStyle={{ padding: '12px 16px' }}
+              style={{ textAlign: 'center', cursor: 'pointer', borderColor: '#9a8b78', flex: 1, minHeight: 140 }}
+            >
+              <ThunderboltOutlined style={{ fontSize: 32, color: '#b55233', marginBottom: 8 }} />
+              <div style={{ lineHeight: 1.4 }}>
+                <Text strong style={{ fontSize: 13 }}>{t('moduleGem')}</Text>
+              </div>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 11, lineHeight: 1.35 }}>
+                {t('moduleGemV3Desc')}
+              </Text>
+            </Card>
+          </a>
+        </Col>
+      </Row>
+      <Row gutter={24} style={{ marginTop: 8 }}>
       <Col xs={24} sm={{ flex: '1 1 0' }} style={{ display: 'flex', minWidth: 0 }}>
         <Card
           hoverable
