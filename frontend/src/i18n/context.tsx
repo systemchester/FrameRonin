@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import type { Lang } from './locales'
 import { t as tFn } from './locales'
 
@@ -41,6 +41,27 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
     meta.setAttribute('content', tFn(lang, 'pageDescription'))
   }, [lang])
+
+  const setLangRef = useRef(setLang)
+  setLangRef.current = setLang
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+      if (e.key === 'j' || e.key === 'J') {
+        e.preventDefault()
+        setLangRef.current('ja')
+      } else if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault()
+        setLangRef.current('en')
+      } else if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        setLangRef.current('zh')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

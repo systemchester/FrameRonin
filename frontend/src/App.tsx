@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { Button, Card, ConfigProvider, Layout, Steps } from 'antd'
+import { App as AntdApp, Button, Card, ConfigProvider, Layout, Spin, Steps } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import enUS from 'antd/locale/en_US'
 import jaJP from 'antd/locale/ja_JP'
 import type { ThemeConfig } from 'antd'
 import { useLanguage } from './i18n/context'
 import GifFrameConverter from './components/GifFrameConverter'
+import ImageExpandShrink from './components/ImageExpandShrink'
 import ImagePixelate from './components/ImagePixelate'
 import ImageResizeStroke from './components/ImageResizeStroke'
 import ModeSelector, { type AppMode } from './components/ModeSelector'
 import SpriteSheetTool from './components/SpriteSheetTool'
+
+const ImageMatte = lazy(() => import('./components/ImageMatte'))
 import ParamsStep from './components/ParamsStep'
 import UploadStep from './components/UploadStep'
 import type { JobParams } from './api'
@@ -71,6 +74,7 @@ function App() {
 
   return (
     <ConfigProvider locale={antdLocales[lang]} theme={wastelandTheme}>
+      <AntdApp>
       <div className="app-contact-float">
         <span className="app-contact-float-label">{t('contactLabel')}</span>
         <a href="https://space.bilibili.com/285760" target="_blank" rel="noopener noreferrer">Bilibili</a>
@@ -86,7 +90,7 @@ function App() {
               <div className="app-header-text">
                 <div className="app-header-row">
                   <h1 className="app-header-brand">FrameRonin</h1>
-                  <span className="app-header-ver">v1.6</span>
+                  <span className="app-header-ver">v2.1</span>
                 </div>
                 <p className="app-header-subtitle">{t('subtitle')}</p>
               </div>
@@ -162,6 +166,34 @@ function App() {
               </div>
               <ImagePixelate />
             </Card>
+          ) : mode === 'expandshrink' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <ImageExpandShrink />
+            </Card>
+          ) : mode === 'matte' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}><Spin size="large" /></div>}>
+                <ImageMatte />
+              </Suspense>
+            </Card>
           ) : (
             <>
               <Steps
@@ -215,6 +247,7 @@ function App() {
           </div>
         </Footer>
       </Layout>
+      </AntdApp>
     </ConfigProvider>
   )
 }

@@ -1,4 +1,5 @@
 """FastAPI 主应用"""
+import asyncio
 import os
 import sys
 import threading
@@ -11,7 +12,7 @@ if str(ROOT) not in sys.path:
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 from .config import (
     ALLOWED_VIDEO_EXTENSIONS,
@@ -20,6 +21,9 @@ from .config import (
     TEMP_DIR,
     UPLOAD_DIR,
 )
+
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+MAX_IMAGE_MB = 20
 
 # Worker 与 API 共享存储路径
 from .models import JobParams, JobResponse
@@ -198,6 +202,36 @@ async def get_index(job_id: str):
         raise HTTPException(404, "结果不存在")
     _, index_path = paths
     return FileResponse(index_path, media_type="application/json")
+
+
+def _run_matte_sync(content: bytes) -> bytes:
+    """在线程池中执行 rembg 抠图，避免阻塞事件循环"""
+    from rembg import remove
+    from worker.processor import _get_session
+    return remove(content, session=_get_session())
+
+
+@app.post("/matte")
+async def matte_image(file: UploadFile = File(...)):
+    """
+    AI 抠图：上传单张图片，返回透明背景 PNG。使用 rembg u2net 模型。
+    首次调用会下载模型，可能较慢。
+    """
+    if not file.filename:
+        raise HTTPException(400, "请上传图片文件")
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(400, f"不支持的格式，仅支持: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
+
+    content = await file.read()
+    if len(content) > MAX_IMAGE_MB * 1024 * 1024:
+        raise HTTPException(400, f"图片不得超过 {MAX_IMAGE_MB}MB")
+
+    try:
+        result = await asyncio.to_thread(_run_matte_sync, content)
+        return Response(content=result, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(500, f"抠图失败: {str(e)}")
 
 
 @app.delete("/jobs/{job_id}")

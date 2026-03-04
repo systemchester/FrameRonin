@@ -52,3 +52,25 @@ export function getResultUrl(jobId: string, format: 'png' | 'zip' = 'png'): stri
 export function getIndexUrl(jobId: string): string {
   return `${API_BASE}/jobs/${jobId}/index`
 }
+
+/** AI 抠图：上传图片，返回透明背景 PNG Blob。首次调用需下载模型，可能较慢。 */
+export async function removeBackground(file: File): Promise<Blob> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const ctrl = new AbortController()
+  const timeout = setTimeout(() => ctrl.abort(), 120_000)
+  try {
+    const res = await fetch(`${API_BASE}/matte`, {
+      method: 'POST',
+      body: formData,
+      signal: ctrl.signal,
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(text || res.statusText)
+    }
+    return res.blob()
+  } finally {
+    clearTimeout(timeout)
+  }
+}
