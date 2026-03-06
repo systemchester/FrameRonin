@@ -6,6 +6,8 @@ import { Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { useLanguage } from '../i18n/context'
 import { formatError } from '../i18n/locales'
+import StashableImage from './StashableImage'
+import StashDropZone from './StashDropZone'
 import {
   applyChromaKey,
   applyInnerStroke,
@@ -204,34 +206,40 @@ export default function ImageResizeStroke() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%', paddingTop: 8 }}>
-      <Dragger
-        name="file"
-        multiple={false}
-        accept={IMAGE_ALLOWED.join(',')}
-        maxCount={1}
-        fileList={file ? [{ uid: '1', name: file.name, size: file.size } as UploadFile] : []}
-        beforeUpload={(f) => {
-          const ext = '.' + (f.name.split('.').pop() || '').toLowerCase()
-          if (!IMAGE_ALLOWED.includes(ext)) {
-            message.error(t('imageFormatError'))
-            return Upload.LIST_IGNORE
-          }
-          if (f.size > IMAGE_MAX_MB * 1024 * 1024) {
-            message.error(t('imageSizeError'))
-            return Upload.LIST_IGNORE
-          }
-          handleFile(f)
-          return false
-        }}
-        onRemove={() => handleFile(null)}
-        style={{ padding: 48 }}
+      <StashDropZone
+        onStashDrop={(f) => handleFile(f)}
+        maxSizeMB={IMAGE_MAX_MB}
+        onSizeError={() => message.error(t('imageSizeError'))}
       >
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined style={{ fontSize: 64, color: '#b55233' }} />
-        </p>
-        <p className="ant-upload-text">{t('imageUploadHint')}</p>
-        <p className="ant-upload-hint">{t('imageFormats')}</p>
-      </Dragger>
+        <Dragger
+          name="file"
+          multiple={false}
+          accept={IMAGE_ALLOWED.join(',')}
+          maxCount={1}
+          fileList={file ? [{ uid: '1', name: file.name, size: file.size } as UploadFile] : []}
+          beforeUpload={(f) => {
+            const ext = '.' + (f.name.split('.').pop() || '').toLowerCase()
+            if (!IMAGE_ALLOWED.includes(ext)) {
+              message.error(t('imageFormatError'))
+              return Upload.LIST_IGNORE
+            }
+            if (f.size > IMAGE_MAX_MB * 1024 * 1024) {
+              message.error(t('imageSizeError'))
+              return Upload.LIST_IGNORE
+            }
+            handleFile(f)
+            return false
+          }}
+          onRemove={() => handleFile(null)}
+          style={{ padding: 48 }}
+        >
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined style={{ fontSize: 64, color: '#b55233' }} />
+          </p>
+          <p className="ant-upload-text">{t('imageUploadHint')}</p>
+          <p className="ant-upload-hint">{t('imageFormats')}</p>
+        </Dragger>
+      </StashDropZone>
 
       {file && originalUrl && originalSize && (
         <>
@@ -427,7 +435,7 @@ export default function ImageResizeStroke() {
                   display: 'inline-block',
                 }}
               >
-                <img
+                <StashableImage
                   src={previewUrl}
                   alt={t('imgPreview')}
                   style={{ maxWidth: '100%', maxHeight: 400, display: 'block', imageRendering: 'pixelated' }}

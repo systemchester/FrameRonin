@@ -1,5 +1,6 @@
 import { Card, Row, Col, Typography } from 'antd'
 import { ArrowsAltOutlined, BlockOutlined, FileImageOutlined, PictureOutlined, VideoCameraOutlined, ThunderboltOutlined, BorderOuterOutlined, ScissorOutlined } from '@ant-design/icons'
+import { useAuth } from '../auth/context'
 import { useLanguage } from '../i18n/context'
 
 const { Text } = Typography
@@ -7,8 +8,9 @@ const { Text } = Typography
 const GEM_V2_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
 const GEM_V3_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
 const GEM_CHAR_V23OT_URL = 'https://gemini.google.com/gem/194dFaRUI2l4kFnLEVzmwIvVYTDgFmGvj?usp=sharing'
+const GEM_ILLUST_URL = 'https://gemini.google.com/gem/1IUuJXgHTTbMEgv5D_G0HXSHXxYdcfTZg?usp=sharing'
 
-export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'pixelate' | 'expandshrink' | 'matte' | null
+export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'spriteadjust' | 'pixelate' | 'expandshrink' | 'matte' | null
 
 interface Props {
   onSelect: (mode: AppMode) => void
@@ -16,6 +18,7 @@ interface Props {
 
 export default function ModeSelector({ onSelect }: Props) {
   const { t } = useLanguage()
+  const { isConnected } = useAuth()
   return (
     <>
       <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }}>
@@ -129,6 +132,61 @@ export default function ModeSelector({ onSelect }: Props) {
           </Card>
         </Col>
       </Row>
+      {isConnected && (
+        <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }}>
+          <Col xs={24} md={12}>
+            <a
+              href={GEM_ILLUST_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+              title={t('moduleIllust')}
+            >
+              <Card
+                hoverable
+                styles={{ body: { padding: '16px 24px' } }}
+                style={{
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  borderColor: '#9a8b78',
+                  background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+                  borderWidth: 2,
+                }}
+              >
+                <ThunderboltOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
+                <div style={{ lineHeight: 1.4 }}>
+                  <Text strong style={{ fontSize: 15 }}>{t('moduleIllust')}</Text>
+                </div>
+                <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4 }}>
+                  {t('moduleIllustDesc')}
+                </Text>
+              </Card>
+            </a>
+          </Col>
+          <Col xs={24} md={12}>
+            <Card
+              hoverable
+              onClick={() => onSelect('spriteadjust')}
+              styles={{ body: { padding: '16px 24px' } }}
+              style={{
+                textAlign: 'center',
+                cursor: 'pointer',
+                borderColor: '#9a8b78',
+                background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+                borderWidth: 2,
+              }}
+            >
+              <BorderOuterOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
+              <div style={{ lineHeight: 1.4 }}>
+                <Text strong style={{ fontSize: 15 }}>{t('moduleSpriteAdjust')}</Text>
+              </div>
+              <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4 }}>
+                {t('moduleSpriteAdjustDesc')}
+              </Text>
+            </Card>
+          </Col>
+        </Row>
+      )}
       <Row gutter={24} style={{ marginTop: 8 }}>
       <Col xs={24} sm={{ flex: '1 1 0' }} style={{ display: 'flex', minWidth: 0 }}>
         <Card

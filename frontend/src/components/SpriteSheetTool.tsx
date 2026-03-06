@@ -6,6 +6,8 @@ import type { UploadFile } from 'antd'
 import { GIFEncoder, quantize, applyPalette } from 'gifenc'
 import JSZip from 'jszip'
 import { useLanguage } from '../i18n/context'
+import StashableImage from './StashableImage'
+import StashDropZone from './StashDropZone'
 
 const { Dragger } = Upload
 const { Text } = Typography
@@ -304,23 +306,34 @@ export default function SpriteSheetTool() {
                   </span>
                 </Space>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>{t('spriteColumnsHint')} / {t('spriteRowsHint')}</Text>
-                <Dragger
-                  accept={IMAGE_ACCEPT.join(',')}
-                  maxCount={1}
-                  fileList={spriteFile ? [{ uid: '1', name: spriteFile.name } as UploadFile] : []}
-                  beforeUpload={(f) => {
+                <StashDropZone
+                  onStashDrop={(f) => {
                     setSpriteFile(f)
                     revokePreviews()
                     setZipUrl((old) => {
                       if (old) URL.revokeObjectURL(old)
                       return null
                     })
-                    return false
                   }}
-                  onRemove={() => setSpriteFile(null)}
                 >
-                  <p className="ant-upload-text">{t('spriteUploadHint')}</p>
-                </Dragger>
+                  <Dragger
+                    accept={IMAGE_ACCEPT.join(',')}
+                    maxCount={1}
+                    fileList={spriteFile ? [{ uid: '1', name: spriteFile.name } as UploadFile] : []}
+                    beforeUpload={(f) => {
+                      setSpriteFile(f)
+                      revokePreviews()
+                      setZipUrl((old) => {
+                        if (old) URL.revokeObjectURL(old)
+                        return null
+                      })
+                      return false
+                    }}
+                    onRemove={() => setSpriteFile(null)}
+                  >
+                    <p className="ant-upload-text">{t('spriteUploadHint')}</p>
+                  </Dragger>
+                </StashDropZone>
                 {spriteFile && spritePreviewUrl && (
                   <>
                     <Text strong style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>{t('imgOriginalPreview')}</Text>
@@ -333,7 +346,7 @@ export default function SpriteSheetTool() {
                         display: 'inline-block',
                       }}
                     >
-                      <img src={spritePreviewUrl} alt="" style={{ maxWidth: 320, maxHeight: 240, display: 'block', imageRendering: 'pixelated' }} />
+                      <StashableImage src={spritePreviewUrl} alt="" style={{ maxWidth: 320, maxHeight: 240, display: 'block', imageRendering: 'pixelated' }} />
                     </div>
                   </>
                 )}
@@ -362,7 +375,7 @@ export default function SpriteSheetTool() {
                     >
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 320, overflow: 'auto' }}>
                         {framePreviewUrls.map((url, i) => (
-                          <img key={i} src={url} alt={`${t('frame')} ${i + 1}`} style={{ maxWidth: 80, maxHeight: 80, imageRendering: 'pixelated', border: '1px solid rgba(0,0,0,0.1)' }} />
+                          <StashableImage key={i} src={url} alt={`${t('frame')} ${i + 1}`} style={{ maxWidth: 80, maxHeight: 80, imageRendering: 'pixelated', border: '1px solid rgba(0,0,0,0.1)' }} />
                         ))}
                       </div>
                     </div>
@@ -394,11 +407,8 @@ export default function SpriteSheetTool() {
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('gifFrameDelay')}:</Text>
                 <Slider min={20} max={500} value={frameDelay} onChange={setFrameDelay} style={{ maxWidth: 200, marginBottom: 16 }} />
                 <Text type="secondary" style={{ fontSize: 12 }}>{frameDelay} ms</Text>
-                <Dragger
-                  accept={IMAGE_ACCEPT.join(',')}
-                  maxCount={1}
-                  fileList={spriteFile ? [{ uid: '1', name: spriteFile.name } as UploadFile] : []}
-                  beforeUpload={(f) => {
+                <StashDropZone
+                  onStashDrop={(f) => {
                     setSpriteFile(f)
                     setGifUrls((prev) => {
                       prev.forEach((g) => URL.revokeObjectURL(g.url))
@@ -408,13 +418,30 @@ export default function SpriteSheetTool() {
                       if (old) URL.revokeObjectURL(old)
                       return null
                     })
-                    return false
                   }}
-                  onRemove={() => setSpriteFile(null)}
-                  style={{ marginTop: 16 }}
                 >
-                  <p className="ant-upload-text">{t('spriteUploadHint')}</p>
-                </Dragger>
+                  <Dragger
+                    accept={IMAGE_ACCEPT.join(',')}
+                    maxCount={1}
+                    fileList={spriteFile ? [{ uid: '1', name: spriteFile.name } as UploadFile] : []}
+                    beforeUpload={(f) => {
+                      setSpriteFile(f)
+                      setGifUrls((prev) => {
+                        prev.forEach((g) => URL.revokeObjectURL(g.url))
+                        return []
+                      })
+                      setGifZipUrl((old) => {
+                        if (old) URL.revokeObjectURL(old)
+                        return null
+                      })
+                      return false
+                    }}
+                    onRemove={() => setSpriteFile(null)}
+                    style={{ marginTop: 16 }}
+                  >
+                    <p className="ant-upload-text">{t('spriteUploadHint')}</p>
+                  </Dragger>
+                </StashDropZone>
                 {spriteFile && spritePreviewUrl && (
                   <>
                     <Text strong style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>{t('imgOriginalPreview')}</Text>
@@ -427,7 +454,7 @@ export default function SpriteSheetTool() {
                         display: 'inline-block',
                       }}
                     >
-                      <img src={spritePreviewUrl} alt="" style={{ maxWidth: 320, maxHeight: 240, display: 'block', imageRendering: 'pixelated' }} />
+                      <StashableImage src={spritePreviewUrl} alt="" style={{ maxWidth: 320, maxHeight: 240, display: 'block', imageRendering: 'pixelated' }} />
                     </div>
                   </>
                 )}
@@ -458,7 +485,7 @@ export default function SpriteSheetTool() {
                           }}
                         >
                           <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('spriteRowN', { n: rowIndex })}</Text>
-                          <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: 200, display: 'block', imageRendering: 'auto' }} />
+                          <StashableImage src={url} alt="" style={{ maxWidth: '100%', maxHeight: 200, display: 'block', imageRendering: 'auto' }} />
                           <Button
                             size="small"
                             icon={<DownloadOutlined />}

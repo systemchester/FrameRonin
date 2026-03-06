@@ -3,6 +3,8 @@ import { App, Button, ColorPicker, Segmented, Slider, Space, Typography, Upload 
 import { DownloadOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd'
 import { useLanguage } from '../i18n/context'
+import StashableImage from './StashableImage'
+import StashDropZone from './StashDropZone'
 
 const { Dragger } = Upload
 const { Text } = Typography
@@ -402,23 +404,29 @@ export default function ImageMatte() {
         </span>
         )}
       </Space>
-      <Dragger
-        accept={IMAGE_ACCEPT.join(',')}
-        maxCount={1}
-        fileList={file ? [{ uid: '1', name: file.name } as UploadFile] : []}
-        beforeUpload={(f) => {
-          if (f.size > IMAGE_MAX_MB * 1024 * 1024) {
-            message.error(t('imageSizeError'))
-            return false
-          }
-          setFile(f)
-          return false
-        }}
-        onRemove={() => setFile(null)}
+      <StashDropZone
+        onStashDrop={(f) => setFile(f)}
+        maxSizeMB={IMAGE_MAX_MB}
+        onSizeError={() => message.error(t('imageSizeError'))}
       >
-        <p className="ant-upload-text">{t('imageUploadHint')}</p>
-        <p className="ant-upload-hint">{t('imageFormats')}</p>
-      </Dragger>
+        <Dragger
+          accept={IMAGE_ACCEPT.join(',')}
+          maxCount={1}
+          fileList={file ? [{ uid: '1', name: file.name } as UploadFile] : []}
+          beforeUpload={(f) => {
+            if (f.size > IMAGE_MAX_MB * 1024 * 1024) {
+              message.error(t('imageSizeError'))
+              return false
+            }
+            setFile(f)
+            return false
+          }}
+          onRemove={() => setFile(null)}
+        >
+          <p className="ant-upload-text">{t('imageUploadHint')}</p>
+          <p className="ant-upload-hint">{t('imageFormats')}</p>
+        </Dragger>
+      </StashDropZone>
       {file && originalUrl && (
         <>
           <Text strong style={{ display: 'block' }}>{t('imgOriginalPreview')} <Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>({t('chromaPickHint')})</Text></Text>
@@ -472,7 +480,7 @@ export default function ImageMatte() {
               display: 'inline-block',
             }}
           >
-            <img src={resultUrl} alt="" style={{ maxWidth: '100%', maxHeight: 400, display: 'block', imageRendering: 'auto' }} />
+            <StashableImage src={resultUrl} alt="" style={{ maxWidth: '100%', maxHeight: 400, display: 'block', imageRendering: 'auto' }} />
             <div
               style={{
                 position: 'absolute',

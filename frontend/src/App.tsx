@@ -5,13 +5,18 @@ import zhCN from 'antd/locale/zh_CN'
 import enUS from 'antd/locale/en_US'
 import jaJP from 'antd/locale/ja_JP'
 import type { ThemeConfig } from 'antd'
+import { AuthProvider } from './auth/context'
+import { ImageStashProvider } from './stash/context'
 import { useLanguage } from './i18n/context'
+import ImageStashPanel from './components/ImageStashPanel'
 import GifFrameConverter from './components/GifFrameConverter'
+import RoninLoginButton from './components/RoninLoginButton'
 import ImageExpandShrink from './components/ImageExpandShrink'
 import ImagePixelate from './components/ImagePixelate'
 import ImageResizeStroke from './components/ImageResizeStroke'
 import ModeSelector, { type AppMode } from './components/ModeSelector'
 import SpriteSheetTool from './components/SpriteSheetTool'
+import SpriteSheetAdjust from './components/SpriteSheetAdjust'
 
 const ImageMatte = lazy(() => import('./components/ImageMatte'))
 import ParamsStep from './components/ParamsStep'
@@ -74,13 +79,10 @@ function App() {
 
   return (
     <ConfigProvider locale={antdLocales[lang]} theme={wastelandTheme}>
+      <AuthProvider>
+      <ImageStashProvider>
       <AntdApp>
-      <div className="app-contact-float">
-        <span className="app-contact-float-label">{t('contactLabel')}</span>
-        <a href="https://space.bilibili.com/285760" target="_blank" rel="noopener noreferrer">Bilibili</a>
-        <span className="app-contact-float-sep">·</span>
-        <a href="https://wpa.qq.com/msgrd?v=3&uin=719937402&site=qq&menu=yes" target="_blank" rel="noopener noreferrer">QQ 719937402</a>
-      </div>
+      <ImageStashPanel />
       <Layout className="app-layout">
         <Header className="app-header">
           <div className="app-header-bg" aria-hidden="true" />
@@ -95,21 +97,27 @@ function App() {
                 <p className="app-header-subtitle">{t('subtitle')}</p>
               </div>
             </div>
-            <div className="app-header-lang">
-              {(['zh', 'en', 'ja'] as const).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  className={`app-header-lang-btn ${lang === l ? 'active' : ''}`}
-                  onClick={() => setLang(l)}
-                >
-                  {l === 'zh' ? '中' : l === 'en' ? 'EN' : '日'}
-                </button>
-              ))}
+            <div className="app-header-right">
+              <div className="app-header-lang">
+                {(['zh', 'en', 'ja'] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    className={`app-header-lang-btn ${lang === l ? 'active' : ''}`}
+                    onClick={() => setLang(l)}
+                  >
+                    {l === 'zh' ? '中' : l === 'en' ? 'EN' : '日'}
+                  </button>
+                ))}
+              </div>
+              <RoninLoginButton />
             </div>
           </div>
         </Header>
-        <Content className="app-content">
+        <Content
+          className="app-content"
+          style={mode === 'spriteadjust' ? { maxWidth: 1120, width: '100%' } : undefined}
+        >
           {mode === null ? (
             <Card>
               <ModeSelector onSelect={setMode} />
@@ -194,6 +202,19 @@ function App() {
                 <ImageMatte />
               </Suspense>
             </Card>
+          ) : mode === 'spriteadjust' ? (
+            <Card>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setMode(null)}
+                >
+                  {t('backToHome')}
+                </Button>
+              </div>
+              <SpriteSheetAdjust />
+            </Card>
           ) : (
             <>
               <Steps
@@ -248,6 +269,8 @@ function App() {
         </Footer>
       </Layout>
       </AntdApp>
+      </ImageStashProvider>
+      </AuthProvider>
     </ConfigProvider>
   )
 }

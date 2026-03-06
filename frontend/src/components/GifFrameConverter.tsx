@@ -7,6 +7,8 @@ import { parseGIF, decompressFrames } from 'gifuct-js'
 import { GIFEncoder, quantize, applyPalette } from 'gifenc'
 import JSZip from 'jszip'
 import { useLanguage } from '../i18n/context'
+import StashableImage from './StashableImage'
+import StashDropZone from './StashDropZone'
 
 const { Dragger } = Upload
 const { Text } = Typography
@@ -261,23 +263,34 @@ export default function GifFrameConverter() {
             children: (
               <>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>{t('gifToFramesHint')}</Text>
-                <Dragger
-                  accept={GIF_ACCEPT}
-                  maxCount={1}
-                  fileList={gifFile ? [{ uid: '1', name: gifFile.name } as UploadFile] : []}
-                  beforeUpload={(f) => {
+                <StashDropZone
+                  onStashDrop={(f) => {
                     setGifFile(f)
                     revokeExtractedPreviews()
                     setFramesZipUrl((old) => {
                       if (old) URL.revokeObjectURL(old)
                       return null
                     })
-                    return false
                   }}
-                  onRemove={() => setGifFile(null)}
                 >
-                  <p className="ant-upload-text">{t('gifUploadHint')}</p>
-                </Dragger>
+                  <Dragger
+                    accept={GIF_ACCEPT}
+                    maxCount={1}
+                    fileList={gifFile ? [{ uid: '1', name: gifFile.name } as UploadFile] : []}
+                    beforeUpload={(f) => {
+                      setGifFile(f)
+                      revokeExtractedPreviews()
+                      setFramesZipUrl((old) => {
+                        if (old) URL.revokeObjectURL(old)
+                        return null
+                      })
+                      return false
+                    }}
+                    onRemove={() => setGifFile(null)}
+                  >
+                    <p className="ant-upload-text">{t('gifUploadHint')}</p>
+                  </Dragger>
+                </StashDropZone>
                 {gifFile && gifPreviewUrl && (
                   <>
                     <Text strong style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>{t('imgOriginalPreview')}</Text>
@@ -290,7 +303,7 @@ export default function GifFrameConverter() {
                         display: 'inline-block',
                       }}
                     >
-                      <img
+                      <StashableImage
                         src={gifPreviewUrl}
                         alt=""
                         style={{ maxWidth: 320, maxHeight: 240, display: 'block' }}
@@ -323,7 +336,7 @@ export default function GifFrameConverter() {
                     >
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 320, overflow: 'auto' }}>
                         {extractedFrameUrls.map((url, i) => (
-                          <img
+                          <StashableImage
                             key={i}
                             src={url}
                             alt={`${t('frame')} ${i + 1}`}
@@ -350,22 +363,26 @@ export default function GifFrameConverter() {
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('gifFrameDelay')}:</Text>
                 <Slider min={20} max={500} value={frameDelay} onChange={setFrameDelay} style={{ maxWidth: 200, marginBottom: 16 }} />
                 <Text type="secondary" style={{ fontSize: 12 }}>{frameDelay} ms</Text>
-                <Dragger
-                  accept={IMAGE_ACCEPT.join(',')}
-                  multiple
-                  fileList={frameFiles.map((f, i) => ({ uid: String(i), name: f.name } as UploadFile))}
-                  beforeUpload={(f) => {
-                    setFrameFiles((prev) => [...prev, f])
-                    return false
-                  }}
-                  onRemove={(file) => {
-                    const idx = frameFiles.findIndex((_, i) => String(i) === file.uid)
-                    if (idx >= 0) setFrameFiles((prev) => prev.filter((_, i) => i !== idx))
-                  }}
-                  style={{ marginTop: 16 }}
+                <StashDropZone
+                  onStashDrop={(f) => setFrameFiles((prev) => [...prev, f])}
                 >
-                  <p className="ant-upload-text">{t('framesUploadHint')}</p>
-                </Dragger>
+                  <Dragger
+                    accept={IMAGE_ACCEPT.join(',')}
+                    multiple
+                    fileList={frameFiles.map((f, i) => ({ uid: String(i), name: f.name } as UploadFile))}
+                    beforeUpload={(f) => {
+                      setFrameFiles((prev) => [...prev, f])
+                      return false
+                    }}
+                    onRemove={(file) => {
+                      const idx = frameFiles.findIndex((_, i) => String(i) === file.uid)
+                      if (idx >= 0) setFrameFiles((prev) => prev.filter((_, i) => i !== idx))
+                    }}
+                    style={{ marginTop: 16 }}
+                  >
+                    <p className="ant-upload-text">{t('framesUploadHint')}</p>
+                  </Dragger>
+                </StashDropZone>
                 {frameInputUrls.length > 0 && (
                   <>
                     <Text strong style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>{t('imgOriginalPreview')}</Text>
@@ -380,7 +397,7 @@ export default function GifFrameConverter() {
                     >
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflow: 'auto' }}>
                         {frameInputUrls.map((url, i) => (
-                          <img
+                          <StashableImage
                             key={i}
                             src={url}
                             alt={`${t('frame')} ${i + 1}`}
@@ -413,7 +430,7 @@ export default function GifFrameConverter() {
                         display: 'inline-block',
                       }}
                     >
-                      <img
+                      <StashableImage
                         src={gifUrl}
                         alt={t('imgPreview')}
                         style={{ maxWidth: '100%', maxHeight: 320, display: 'block', imageRendering: 'auto' }}

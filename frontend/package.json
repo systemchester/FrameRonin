@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sky-mavis/tanto-connect": "^0.0.22",
     "@ant-design/icons": "^6.1.0",
     "antd": "^6.3.1",
     "axios": "^1.13.5",

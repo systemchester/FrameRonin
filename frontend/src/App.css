@@ -1,39 +1,3 @@
-.app-contact-float {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(44, 37, 32, 0.92) 0%, rgba(61, 47, 36, 0.9) 100%);
-  border: 1px solid rgba(154, 139, 120, 0.6);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  color: rgba(232, 220, 200, 0.95);
-}
-
-.app-contact-float-label {
-  color: rgba(200, 190, 175, 0.9);
-}
-
-.app-contact-float a {
-  color: rgba(232, 220, 200, 0.95);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.app-contact-float a:hover {
-  color: #b55233;
-}
-
-.app-contact-float-sep {
-  opacity: 0.5;
-  margin: 0 2px;
-}
-
 .app-layout {
   min-height: 100vh;
   background: linear-gradient(180deg, #c9bfb0 0%, #b8ab9a 100%);
@@ -101,10 +65,35 @@
   min-width: 0;
 }
 
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .app-header-lang {
   display: flex;
   gap: 2px;
-  flex-shrink: 0;
+}
+
+.app-header-connect-btn.ant-btn {
+  font-size: 12px;
+  height: 28px;
+  padding: 0 10px;
+  border-color: #b55233;
+  background: rgba(181, 82, 51, 0.4);
+  color: #f0e6d4;
+}
+
+.app-header-connect-btn.ant-btn:hover {
+  border-color: #c45c3e;
+  background: rgba(181, 82, 51, 0.6);
+  color: #f0e6d4;
+}
+
+.app-header-wallet-btn {
+  min-width: 100px;
 }
 
 .app-header-lang-btn {
@@ -181,11 +170,15 @@
 
 .app-content {
   padding: 24px;
-  max-width: 840px;
+  width: 100%;
+  max-width: 980px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .app-content .ant-card {
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   border: 1px solid #9a8b78;
@@ -253,5 +246,314 @@
   vertical-align: middle;
   border: 1px solid rgba(154, 139, 120, 0.5);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Image Stash Panel - 左侧浮动暂存框（含联系方式） */
+.image-stash-panel {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 999;
+  width: 232px;
+  max-height: min(75vh, 840px);
+  background: linear-gradient(135deg, rgba(44, 37, 32, 0.94) 0%, rgba(61, 47, 36, 0.92) 100%);
+  border: 1px solid rgba(154, 139, 120, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: rgba(232, 220, 200, 0.95);
+  transition: border-color 0.2s, box-shadow 0.2s, width 0.2s;
+}
+
+.image-stash-panel[data-drag-over='true'] {
+  border-color: #b55233;
+  box-shadow: 0 0 0 2px rgba(181, 82, 51, 0.4);
+}
+
+.image-stash-panel[data-collapsed='true'] {
+  width: 36px;
+  min-height: 48px;
+  max-height: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.image-stash-expand-btn {
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: rgba(232, 220, 200, 0.95);
+  background: transparent;
+  border: 1px solid rgba(154, 139, 120, 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.image-stash-expand-btn:hover {
+  color: #b55233;
+  border-color: #b55233;
+  background: rgba(181, 82, 51, 0.15);
+}
+
+.image-stash-collapse-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: rgba(200, 190, 175, 0.9);
+  background: transparent;
+  border: 1px solid rgba(154, 139, 120, 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.image-stash-collapse-btn:hover {
+  color: #b55233;
+  border-color: #b55233;
+}
+
+.image-stash-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(154, 139, 120, 0.4);
+}
+
+.image-stash-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.image-stash-contact-label {
+  color: rgba(200, 190, 175, 0.9);
+}
+
+.image-stash-contact a {
+  color: rgba(232, 220, 200, 0.95);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.image-stash-contact a:hover {
+  color: #b55233;
+}
+
+.image-stash-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(154, 139, 120, 0.4);
+}
+
+.image-stash-header span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.image-stash-session-badge {
+  font-size: 8px;
+  color: #6a9c5e;
+  margin-left: 2px;
+}
+
+.image-stash-clear {
+  padding: 2px 6px;
+  font-size: 10px;
+  color: rgba(200, 190, 175, 0.9);
+  background: transparent;
+  border: 1px solid rgba(154, 139, 120, 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.image-stash-clear:hover {
+  color: #b55233;
+  border-color: #b55233;
+}
+
+.image-stash-drop-zone {
+  padding: 8px;
+  min-height: 60px;
+}
+
+.image-stash-hint {
+  margin: 0 0 8px 0;
+  font-size: 10px;
+  color: rgba(200, 190, 175, 0.8);
+  line-height: 1.3;
+}
+
+.image-stash-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-height: min(65vh, 680px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.image-stash-item {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 96px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(154, 139, 120, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.image-stash-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.image-stash-item-actions {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+}
+
+.image-stash-item-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.image-stash-item-btn:hover {
+  opacity: 1;
+  background: rgba(181, 82, 51, 0.9);
+}
+
+.image-stash-drop-more {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed rgba(154, 139, 120, 0.5);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: rgba(200, 190, 175, 0.8);
+  background: rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.image-stash-drop-more:hover,
+.image-stash-drop-more[data-drag-over='true'] {
+  border-color: #b55233;
+  background: rgba(181, 82, 51, 0.15);
+  color: rgba(232, 220, 200, 0.95);
+}
+
+.image-stash-preview-popover {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 8px;
+  z-index: 10;
+  width: 280px;
+  max-height: 400px;
+  padding: 4px;
+  background: rgba(44, 37, 32, 0.98);
+  border: 1px solid rgba(154, 139, 120, 0.6);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.image-stash-preview-popover img {
+  width: 100%;
+  height: auto;
+  max-height: 380px;
+  object-fit: contain;
+  display: block;
+}
+
+.stashable-image {
+  cursor: grab;
+}
+
+.stashable-image:active {
+  cursor: grabbing;
+}
+
+/* SpriteSheetAdjust 模块 - 加宽布局 */
+.sprite-adjust-module {
+  width: 100%;
+  min-width: 0;
+}
+
+.sprite-adjust-module .sprite-adjust-grid {
+  width: 100%;
+  max-width: 1060px;
+  max-height: 420px;
+  min-height: 120px;
+}
+
+/* 行列头格子：居中且不拉伸，防止与帧格重叠 */
+.sprite-adjust-module .sprite-adjust-header-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  justify-self: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 仅对帧格子应用最小尺寸，min-height:0 防止溢出到下一行 */
+.sprite-adjust-module .sprite-adjust-grid > div.sprite-adjust-cell {
+  min-width: 48px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.sprite-adjust-module .sprite-adjust-anim-display {
+  max-width: 520px;
+}
+
+.image-stash-item-draggable {
+  cursor: grab;
+}
+
+.image-stash-item-draggable:active {
+  cursor: grabbing;
 }
 
