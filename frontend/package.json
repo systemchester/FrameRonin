@@ -3,7 +3,8 @@
   "private": true,
   "version": "2.2",
   "overrides": {
-    "elliptic": "6.6.1"
+    "elliptic": "6.6.1",
+    "lodash": "4.17.23"
   },
   "type": "module",
   "scripts": {
