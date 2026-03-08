@@ -1,20 +1,23 @@
 # 云原生构建配置 - pixelwork 前端
 # 文档: https://docs.cnb.cool/build/quick-start.html
+# 部署到 EdgeOne Pages: https://edgeone.ai/zh/document/using-cnb-plugin
+#
+# 前置步骤（首次使用需配置）:
+# 1. 在 EdgeOne Pages 控制台创建 API Token
+# 2. 在 CNB 创建密钥仓库，添加 envs.yml 内容: EDGEONE_API_TOKEN: 你的token
+# 3. 将下方 imports 的 URL 替换为你的密钥仓库地址
 
 main:
   push:
-    - name: "pixelwork 前端构建"
+    - name: "pixelwork 构建并部署"
       docker:
         image: node:20
+      env:
+        EDGEONE_API_TOKEN: "0ZSMG9GXfGXsVdPmC1bY/BIP23iHSjv2AWzTw7W+h3A="
       stages:
         - name: 安装依赖
           script: cd frontend && npm ci
         - name: 构建前端
           script: cd frontend && npm run build
-        - name: 输出构建信息
-          script: |
-            echo "构建完成"
-            echo "用户: ${CNB_BUILD_USER}"
-            echo "分支: ${CNB_BRANCH}"
-            echo "事件: ${CNB_EVENT}"
-            ls -la frontend/dist/
+        - name: 部署到 EdgeOne Pages
+          script: npx edgeone pages deploy frontend/dist -n RoninPixeltools -t $EDGEONE_API_TOKEN
