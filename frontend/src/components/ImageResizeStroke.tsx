@@ -13,8 +13,10 @@ import {
   applyInnerStroke,
   cropImageBlob,
   extendImageBottom,
+  getTopLeftPixelColor,
   resizeImageToBlob,
 } from './ParamsStep/utils'
+import { removeGeminiWatermarkFromBlob } from '../lib/geminiWatermark'
 import ImageCropEditor from './ImageResizeStroke/ImageCropEditor'
 
 const { Dragger } = Upload
@@ -46,6 +48,7 @@ export default function ImageResizeStroke() {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
   const [loading, setLoading] = useState(false)
   const [extendLoading, setExtendLoading] = useState(false)
+  const [oneClickLoading, setOneClickLoading] = useState(false)
 
   const croppedW = originalSize ? Math.max(1, originalSize.w - cropRegion.left - cropRegion.right) : 0
   const croppedH = originalSize ? Math.max(1, originalSize.h - cropRegion.top - cropRegion.bottom) : 0
@@ -222,6 +225,35 @@ export default function ImageResizeStroke() {
     }
   }
 
+  const handleOneClickProcess = async () => {
+    if (!file) return
+    setOneClickLoading(true)
+    setPreviewUrl((old) => { if (old) URL.revokeObjectURL(old); return null })
+    setPreviewBlob(null)
+    try {
+      let blob = await file.arrayBuffer().then((b) => new Blob([b]))
+      blob = await removeGeminiWatermarkFromBlob(blob)
+      const { r, g, b } = await getTopLeftPixelColor(blob)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r2 = new FileReader()
+        r2.onload = () => resolve(r2.result as string)
+        r2.onerror = () => reject(new Error('ERR_READ'))
+        r2.readAsDataURL(blob)
+      })
+      const { dataUrl: matteDataUrl } = await applyChromaKey(dataUrl, r, g, b, 80, 5)
+      blob = await fetch(matteDataUrl).then((res) => res.blob())
+      blob = await resizeImageToBlob(blob, 144, 144, false, true)
+      blob = await extendImageBottom(blob, 48)
+      setPreviewBlob(blob)
+      setPreviewUrl(URL.createObjectURL(blob))
+      message.success(t('imgOneClickSuccess'))
+    } catch (e) {
+      message.error(t('exportFailed') + ': ' + formatError(e, t))
+    } finally {
+      setOneClickLoading(false)
+    }
+  }
+
   const hasCrop = cropRegion.left > 0 || cropRegion.top > 0 || cropRegion.right > 0 || cropRegion.bottom > 0
 
   return (
@@ -260,6 +292,23 @@ export default function ImageResizeStroke() {
           <p className="ant-upload-hint">{t('imageFormats')}</p>
         </Dragger>
       </StashDropZone>
+
+      {file && (
+        <div style={{ marginTop: 16 }}>
+          <Button
+            type="primary"
+            size="large"
+            loading={oneClickLoading}
+            onClick={handleOneClickProcess}
+            style={{ minWidth: 140 }}
+          >
+            {t('imgOneClickProcess')}
+          </Button>
+          <Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }}>
+            {t('imgOneClickHint')}
+          </Text>
+        </div>
+      )}
 
       {file && originalUrl && originalSize && (
         <>

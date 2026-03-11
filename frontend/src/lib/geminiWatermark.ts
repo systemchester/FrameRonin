@@ -133,6 +133,49 @@ export async function loadAlphaMaskFromUrl(url: string): Promise<{ alpha: Float3
   return { alpha, width: canvas.width, height: canvas.height }
 }
 
+/** 从 Blob 去除 Gemini 水印，返回新 Blob。使用 auto 尺寸 */
+export async function removeGeminiWatermarkFromBlob(blob: Blob): Promise<Blob> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result as string)
+    r.onerror = () => reject(new Error('ERR_READ'))
+    r.readAsDataURL(blob)
+  })
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image()
+    i.onload = () => resolve(i)
+    i.onerror = reject
+    i.src = dataUrl
+  })
+  const w = img.naturalWidth
+  const h = img.naturalHeight
+  const size: WatermarkSize = getWatermarkSize(w, h)
+  const pos = getWatermarkPosition(w, h, size)
+  let alphaMap: Float32Array
+  let mapW: number
+  let mapH: number
+  try {
+    const loaded = await getEmbeddedAlphaMask(size)
+    alphaMap = loaded.alpha
+    mapW = loaded.width
+    mapH = loaded.height
+  } catch {
+    alphaMap = createApproxAlphaMap(size)
+    mapW = mapH = size
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(img, 0, 0)
+  const imageData = ctx.getImageData(0, 0, w, h)
+  removeWatermarkReverseAlpha(imageData, alphaMap, mapW, mapH, pos.x, pos.y, 255)
+  ctx.putImageData(imageData, 0, 0)
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)
+  })
+}
+
 /** 使用近似 alpha（无预校准 mask 时的降级方案） */
 export function createApproxAlphaMap(size: number): Float32Array {
   const alpha = new Float32Array(size * size)

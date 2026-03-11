@@ -379,6 +379,27 @@ export function applyBrushMask(
   })
 }
 
+/** 获取图片左上角像素的 RGB 颜色 */
+export async function getTopLeftPixelColor(blob: Blob): Promise<{ r: number; g: number; b: number }> {
+  const img = await (typeof createImageBitmap === 'function'
+    ? createImageBitmap(blob)
+    : new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image()
+        const url = URL.createObjectURL(blob)
+        im.onload = () => { URL.revokeObjectURL(url); resolve(im) }
+        im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ERR_IMAGE_LOAD')) }
+        im.src = url
+      }))
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('ERR_CANVAS_CREATE')
+  ctx.drawImage(img, 0, 0)
+  const d = ctx.getImageData(0, 0, 1, 1).data
+  return { r: d[0] ?? 0, g: d[1] ?? 0, b: d[2] ?? 0 }
+}
+
 export function applyChromaKey(
   dataUrl: string,
   bgR: number,
