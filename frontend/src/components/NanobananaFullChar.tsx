@@ -7,11 +7,14 @@ const GEM_V4TX3_URL = 'https://gemini.google.com/gem/1zerS4eXHUGNj2tj-63omHyFRo_
 const GEM_HORIZONTAL_CHAR_URL = 'https://gemini.google.com/gem/10LatqlJGxea-I-JCyoNo1rERgZwtKpBi?usp=sharing'
 const GEM_8DIR_TOPDOWN_URL = 'https://gemini.google.com/gem/1Xr3TdyAOLugE19v5poA4LpJSfVT4Drox?usp=sharing'
 const GEM_HORSE_RIDING_URL = 'https://gemini.google.com/gem/1n--WxKek4kEZO_gqQeab-u5b3mO-qyl1?usp=sharing'
+const GEM_ONE_IMAGE_ALL_ACTIONS_URL = 'https://gemini.google.com/gem/1XmXCenVbvcXFRy70C-9W9bI49RNMgRTj?usp=sharing'
 
 const HORIZONTAL_CHAR_GIFS = ['h2s1 (1).gif', 'h2s1 (2).gif', 'h2s1 (3).gif', 'h2s1 (4).gif', 'h2s1 (5).gif']
 const D8S_TOPDOWN_GIFS = ['d8s (1).gif', 'd8s (2).gif', 'd8s (3).gif', 'd8s (4).gif', 'd8s (5).gif']
 
 const V4TX3_GIFS = ['A2M_row1.gif', 'A2M_row3.gif', 'row_01.gif', 'row_02.gif', 'row_03.gif', 'row_04.gif', 'row_05.gif', 'jump.gif', 'attack.gif', 'spr.gif']
+
+const OTF_ALL_ACTIONS_GIFS = ['otf (1).gif', 'otf (2).gif', 'otf (3).gif', 'otf (4).gif', 'otf (5).gif', 'otf (6).gif']
 
 export default function NanobananaFullChar() {
   const { t } = useLanguage()
@@ -84,16 +87,24 @@ export default function NanobananaFullChar() {
           />
         </div>
       </div>
-      <Space wrap size="middle" style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24 }}>
         <Button
           type="primary"
-          onClick={() => {
-            // 功能待实现，后期定义
-          }}
+          onClick={() => window.open(GEM_ONE_IMAGE_ALL_ACTIONS_URL, '_blank')}
         >
           {t('nanobananaFullCharBtn5')}
         </Button>
-      </Space>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${OTF_ALL_ACTIONS_GIFS.length}, 1fr)`, gap: 8, marginTop: 8, width: '100%' }}>
+          {OTF_ALL_ACTIONS_GIFS.map((name) => (
+            <img
+              key={name}
+              src={`${import.meta.env.BASE_URL}${encodeURI(name)}`}
+              alt={name}
+              style={{ width: '100%', aspectRatio: 1, objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid rgba(0,0,0,0.1)' }}
+            />
+          ))}
+        </div>
+      </div>
     </>
   )
 }
