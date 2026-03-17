@@ -1,6 +1,10 @@
-# FrameRonin - 视频转序列帧 · 抠图 · Sprite Sheet v2.1
+# FrameRonin - 视频转序列帧 · 抠图 · Sprite Sheet v2.5
+
+[中文](README.md) | [English](README.en.md) | [日本語](README.ja.md)
 
 像素图片与序列帧处理工具集，支持视频拆帧、GIF 处理、图片抠图、Sprite Sheet 合成等。
+
+![AI像素商K 项目预览](frontend/public/K.png)
 
 ## 功能模块
 
@@ -26,6 +30,10 @@
 - **nanobanana RPG Maker 角色素材生成**：链接 Gemini 生成 RPG Maker 角色素材
 - **nanobanana 像素场景生成**、**立绘生成**：链接 Gemini
 - **nanob 全人物动作生成测试**：连生动作 V4Tx3 等
+
+### 其他
+- **Seedance 2.0 视频水印去除**：需本地部署后端，去除 Seedance/即梦 视频的「AI生成」水印
+- **素材和游戏源码分享**：01-美术素材、godot 代码、成品项目（含 AI像素商K）
 
 ## 环境要求
 
