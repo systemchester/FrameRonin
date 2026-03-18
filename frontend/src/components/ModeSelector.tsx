@@ -1,4 +1,4 @@
-import { Card, Row, Col, Typography } from 'antd'
+import { Card, Row, Col, Typography, Space, Button } from 'antd'
 import { ArrowsAltOutlined, BlockOutlined, FileImageOutlined, PictureOutlined, VideoCameraOutlined, ThunderboltOutlined, BorderOuterOutlined, ScissorOutlined, SafetyOutlined, ShareAltOutlined } from '@ant-design/icons'
 import { useAuth } from '../auth/context'
 import { useLanguage } from '../i18n/context'
@@ -6,9 +6,12 @@ import { useLanguage } from '../i18n/context'
 const { Text } = Typography
 
 const GEM_V2_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
+const GEM_V2_URL_2 = 'https://gemini.google.com/gem/1kEnaydh5Ssne-XxSUQFgVxie93u-kR4P?usp=sharing'
 const GEM_V3_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
 const GEM_CHAR_V23OT_URL = 'https://gemini.google.com/gem/1mRxvjPRe_jWUxHNB9R7S3aiLiHOTQIU5?usp=sharing'
 const GEM_SCENE_URL = 'https://gemini.google.com/gem/1a83JP082OIliUQZN5SsBguMOrYm4g6P2?usp=sharing'
+const GEM_SCENE_URL_2 = 'https://gemini.google.com/gem/1u2qo4OVCxniX5swJttIS2GuqPjswycmb?usp=sharing'
+const GEM_SCENE_URL_3 = 'https://gemini.google.com/gem/1nrZ7I6KFoPdoF-Ej2kte2edB0Ct-Sb10?usp=sharing'
 const GEM_ILLUST_URL = 'https://gemini.google.com/gem/1IUuJXgHTTbMEgv5D_G0HXSHXxYdcfTZg?usp=sharing'
 const GEM_RPGMAKER_URL = 'https://gemini.google.com/gem/1zkDfsN972fczP66xwCiQ6H0jP7HLtGz5?usp=sharing'
 
@@ -78,27 +81,24 @@ export default function ModeSelector({ onSelect }: Props) {
       </Row>
       <Row gutter={24} style={{ marginTop: 8 }} justify="center">
         <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
-          <a
-            href={GEM_V2_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
-            title={t('moduleGemV2')}
+          <Card
+            hoverable
+            styles={{ body: { padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
+            style={{ textAlign: 'center', borderColor: '#9a8b78', flex: 1, minHeight: 140 }}
           >
-            <Card
-              hoverable
-              styles={{ body: { padding: '12px 16px' } }}
-              style={{ textAlign: 'center', cursor: 'pointer', borderColor: '#9a8b78', flex: 1, minHeight: 140 }}
-            >
-              <ThunderboltOutlined style={{ fontSize: 32, color: '#b55233', marginBottom: 8 }} />
-              <div style={{ lineHeight: 1.4 }}>
-                <Text strong style={{ fontSize: 13 }}>{t('moduleGemV2')}</Text>
-              </div>
-              <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 11, lineHeight: 1.35 }}>
-                {t('moduleGemV2Desc')}
-              </Text>
-            </Card>
-          </a>
+            <ThunderboltOutlined style={{ fontSize: 32, color: '#b55233', marginBottom: 8 }} />
+            <div style={{ lineHeight: 1.4 }}>
+              <Text strong style={{ fontSize: 13 }}>{t('moduleGemV2')}</Text>
+            </div>
+            <Space size="small" style={{ marginTop: 12, justifyContent: 'center', width: '100%' }}>
+              <Button type="primary" size="small" onClick={() => window.open(GEM_V2_URL, '_blank')}>
+                {t('gemV2Link1')}
+              </Button>
+              <Button type="primary" size="small" onClick={() => window.open(GEM_V2_URL_2, '_blank')}>
+                {t('gemV2Link2')}
+              </Button>
+            </Space>
+          </Card>
         </Col>
         <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <a
@@ -166,36 +166,35 @@ export default function ModeSelector({ onSelect }: Props) {
       {isConnected && (
         <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }} align="stretch">
           <Col xs={24} md={6} style={{ display: 'flex' }}>
-            <a
-              href={GEM_SCENE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flex: 1, minWidth: 0 }}
-              title={t('moduleNanobananaScene')}
+            <Card
+              hoverable
+              styles={{ body: { padding: '16px 24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
+              style={{
+                textAlign: 'center',
+                borderColor: '#9a8b78',
+                background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+                borderWidth: 2,
+                flex: 1,
+                minHeight: 0,
+                width: '100%',
+              }}
             >
-              <Card
-                hoverable
-                styles={{ body: { padding: '16px 24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
-                style={{
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  borderColor: '#9a8b78',
-                  background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
-                  borderWidth: 2,
-                  flex: 1,
-                  minHeight: 0,
-                  width: '100%',
-                }}
-              >
-                <ThunderboltOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
-                <div style={{ lineHeight: 1.4 }}>
-                  <Text strong style={{ fontSize: 15 }}>{t('moduleNanobananaScene')}</Text>
-                </div>
-                <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4 }}>
-                  {t('moduleNanobananaSceneDesc')}
-                </Text>
-              </Card>
-            </a>
+              <ThunderboltOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
+              <div style={{ lineHeight: 1.4 }}>
+                <Text strong style={{ fontSize: 15 }}>{t('moduleNanobananaScene')}</Text>
+              </div>
+              <Space size="small" style={{ marginTop: 12, justifyContent: 'center', width: '100%' }} wrap>
+                <Button type="primary" size="small" onClick={() => window.open(GEM_SCENE_URL, '_blank')}>
+                  {t('nanobananaSceneLink1')}
+                </Button>
+                <Button type="primary" size="small" onClick={() => window.open(GEM_SCENE_URL_2, '_blank')}>
+                  {t('nanobananaSceneLink2')}
+                </Button>
+                <Button type="primary" size="small" onClick={() => window.open(GEM_SCENE_URL_3, '_blank')}>
+                  {t('nanobananaSceneLink3')}
+                </Button>
+              </Space>
+            </Card>
           </Col>
           <Col xs={24} md={6} style={{ display: 'flex' }}>
             <a

@@ -207,6 +207,8 @@ export default function GifFrameConverter() {
   const [frameFiles, setFrameFiles] = useState<File[]>([])
   const [frameInputUrls, setFrameInputUrls] = useState<string[]>([])
   const [frameDelay, setFrameDelay] = useState(100)
+  const [frameDragReorderIdx, setFrameDragReorderIdx] = useState<number | null>(null)
+  const [frameCols, setFrameCols] = useState(6)
   const [loading, setLoading] = useState(false)
   const [framesZipUrl, setFramesZipUrl] = useState<string | null>(null)
   const [extractedFrameUrls, setExtractedFrameUrls] = useState<string[]>([])
@@ -841,6 +843,12 @@ export default function GifFrameConverter() {
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('gifFrameDelay')}:</Text>
                 <Slider min={20} max={500} value={frameDelay} onChange={setFrameDelay} style={{ maxWidth: 200, marginBottom: 16 }} />
                 <Text type="secondary" style={{ fontSize: 12 }}>{frameDelay} ms</Text>
+                {frameFiles.length > 0 && (
+                  <Space wrap align="center" style={{ marginBottom: 12 }}>
+                    <Text type="secondary">{t('gifFrameCols')}:</Text>
+                    <InputNumber min={1} max={16} value={frameCols} onChange={(v) => setFrameCols(v ?? 6)} style={{ width: 64 }} />
+                  </Space>
+                )}
                 <StashDropZone
                   onStashDrop={(f) => setFrameFiles((prev) => [...prev, f])}
                 >
@@ -864,23 +872,144 @@ export default function GifFrameConverter() {
                 {frameInputUrls.length > 0 && (
                   <>
                     <Text strong style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>{t('imgOriginalPreview')}</Text>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>{t('gifFrameReorderHint')}</Text>
                     <div
                       style={{
                         padding: 16,
                         background: 'repeating-conic-gradient(#c9bfb0 0% 25%, #e4dbcf 0% 50%) 50% / 16px 16px',
                         borderRadius: 8,
                         border: '1px solid #9a8b78',
-                        display: 'inline-block',
+                        width: '100%',
+                        maxWidth: 720,
                       }}
                     >
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflow: 'auto' }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${Math.max(1, frameCols)}, 1fr)`,
+                          gap: 12,
+                          maxHeight: 400,
+                          overflow: 'auto',
+                        }}
+                      >
                         {frameInputUrls.map((url, i) => (
-                          <StashableImage
+                          <div
                             key={i}
-                            src={url}
-                            alt={`${t('frame')} ${i + 1}`}
-                            style={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain', border: '1px solid rgba(0,0,0,0.1)' }}
-                          />
+                            style={{
+                              position: 'relative',
+                              display: 'inline-block',
+                              opacity: frameDragReorderIdx === i ? 0.6 : 1,
+                              border: frameDragReorderIdx === i ? '2px dashed #b55233' : 'none',
+                              borderRadius: 4,
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              e.dataTransfer.dropEffect = 'move'
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              const from = frameDragReorderIdx
+                              if (from === null || from === i) return
+                              setFrameFiles((prev) => {
+                                const next = [...prev]
+                                const [item] = next.splice(from, 1)
+                                next.splice(i, 0, item!)
+                                return next
+                              })
+                              setFrameDragReorderIdx(null)
+                            }}
+                            onDragLeave={() => {}}
+                          >
+                            <StashableImage
+                              src={url}
+                              alt={`${t('frame')} ${i + 1}`}
+                              draggable={false}
+                              style={{ maxWidth: 120, maxHeight: 120, width: '100%', objectFit: 'contain', imageRendering: 'pixelated', border: '1px solid rgba(0,0,0,0.1)', display: 'block' }}
+                            />
+                            <span
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation()
+                                e.dataTransfer.effectAllowed = 'move'
+                                e.dataTransfer.setData('text/plain', String(i))
+                                setFrameDragReorderIdx(i)
+                              }}
+                              onDragEnd={() => setFrameDragReorderIdx(null)}
+                              style={{
+                                position: 'absolute',
+                                top: 2,
+                                left: 2,
+                                width: 18,
+                                height: 18,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'rgba(0,0,0,0.5)',
+                                cursor: 'grab',
+                                background: 'rgba(255,255,255,0.8)',
+                                borderRadius: 2,
+                                zIndex: 1,
+                              }}
+                            >
+                              <DragOutlined style={{ fontSize: 12 }} />
+                            </span>
+                            <Button
+                              type="primary"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setFrameFiles((prev) => prev.filter((_, idx) => idx !== i))
+                              }}
+                              style={{
+                                position: 'absolute',
+                                top: 2,
+                                right: 2,
+                                width: 18,
+                                height: 18,
+                                minWidth: 18,
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                opacity: 0.9,
+                                fontSize: 10,
+                              }}
+                            />
+                            {i % frameCols === 0 && (
+                              <Tooltip title={t('gifFrameDeleteRow')}>
+                                <Button
+                                  type="primary"
+                                  danger
+                                  size="small"
+                                  icon={<DeleteOutlined />}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    const rowStart = Math.floor(i / frameCols) * frameCols
+                                    const rowEnd = Math.min(rowStart + frameCols, frameFiles.length)
+                                    setFrameFiles((prev) => prev.filter((_, idx) => idx < rowStart || idx >= rowEnd))
+                                  }}
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: 2,
+                                    left: 2,
+                                    width: 18,
+                                    height: 18,
+                                    minWidth: 18,
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    opacity: 0.9,
+                                    fontSize: 10,
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

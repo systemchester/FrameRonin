@@ -110,6 +110,120 @@ export async function extendImageBottom(blob: Blob, _bottomPx: number): Promise<
   })
 }
 
+/** 古装全动作：256x256 → 4x4 切分 → 每格加边 → 按规则重排 */
+export async function processAncientCostumeAllActions(blob: Blob): Promise<Blob> {
+  const img = await (typeof createImageBitmap === 'function'
+    ? createImageBitmap(blob)
+    : new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image()
+        const url = URL.createObjectURL(blob)
+        im.onload = () => { URL.revokeObjectURL(url); resolve(im) }
+        im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ERR_IMAGE_LOAD')) }
+        im.src = url
+      }))
+  if (img.width !== 256 || img.height !== 256) {
+    throw new Error('processAncientCostumeAllActions expects 256x256 input')
+  }
+  const cellSize = 64
+  const pad = { top: 34, bottom: 30, left: 32, right: 32 }
+  const outCellW = cellSize + pad.left + pad.right
+  const outCellH = cellSize + pad.top + pad.bottom
+
+  const getCell = (row: number, col: number) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = outCellW
+    canvas.height = outCellH
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return canvas
+    const sx = col * cellSize
+    const sy = row * cellSize
+    ctx.drawImage(img, sx, sy, cellSize, cellSize, pad.left, pad.top, cellSize, cellSize)
+    return canvas
+  }
+
+  const flipH = (src: HTMLCanvasElement) => {
+    const c = document.createElement('canvas')
+    c.width = src.width
+    c.height = src.height
+    const ctx = c.getContext('2d')
+    if (!ctx) return c
+    ctx.save()
+    ctx.translate(c.width, 0)
+    ctx.scale(-1, 1)
+    ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, src.width, src.height)
+    ctx.restore()
+    return c
+  }
+
+  const cells: Record<string, HTMLCanvasElement> = {}
+  for (let r = 1; r <= 4; r++) {
+    for (let c = 1; c <= 4; c++) {
+      const key = `${r}K${c}`
+      cells[key] = getCell(r - 1, c - 1)
+    }
+  }
+
+  const outW = 1024
+  const outH = 7 * outCellH
+  const out = document.createElement('canvas')
+  out.width = outW
+  out.height = outH
+  const ctx = out.getContext('2d')
+  if (!ctx) throw new Error('ERR_CANVAS_CREATE')
+  ctx.clearRect(0, 0, outW, outH)
+
+  let y = 0
+  const draw = (key: string, flipped: boolean, count: number, xStart = 0) => {
+    const c = flipped ? flipH(cells[key]!) : cells[key]!
+    for (let i = 0; i < count; i++) {
+      ctx.drawImage(c, xStart + i * outCellW, y, outCellW, outCellH)
+    }
+  }
+
+  draw('2K4', false, 4)
+  draw('2K4', true, 4, 4 * outCellW)
+  y += outCellH
+  ctx.drawImage(cells['1K1']!, 0, y)
+  ctx.drawImage(cells['1K2']!, outCellW, y)
+  ctx.drawImage(cells['1K3']!, 2 * outCellW, y)
+  ctx.drawImage(cells['1K4']!, 3 * outCellW, y)
+  ctx.drawImage(cells['2K1']!, 4 * outCellW, y)
+  ctx.drawImage(cells['2K2']!, 5 * outCellW, y)
+  y += outCellH
+  ctx.drawImage(flipH(cells['1K1']!), 0, y)
+  ctx.drawImage(flipH(cells['1K2']!), outCellW, y)
+  ctx.drawImage(flipH(cells['1K3']!), 2 * outCellW, y)
+  ctx.drawImage(flipH(cells['1K4']!), 3 * outCellW, y)
+  ctx.drawImage(flipH(cells['2K1']!), 4 * outCellW, y)
+  ctx.drawImage(flipH(cells['2K2']!), 5 * outCellW, y)
+  y += outCellH
+  draw('4K4', false, 4)
+  draw('4K4', true, 4, 4 * outCellW)
+  y += outCellH
+  ctx.drawImage(cells['3K1']!, 0, y)
+  ctx.drawImage(cells['3K2']!, outCellW, y)
+  ctx.drawImage(cells['3K3']!, 2 * outCellW, y)
+  ctx.drawImage(cells['3K4']!, 3 * outCellW, y)
+  ctx.drawImage(cells['4K1']!, 4 * outCellW, y)
+  ctx.drawImage(cells['4K2']!, 5 * outCellW, y)
+  y += outCellH
+  ctx.drawImage(flipH(cells['3K1']!), 0, y)
+  ctx.drawImage(flipH(cells['3K2']!), outCellW, y)
+  ctx.drawImage(flipH(cells['3K3']!), 2 * outCellW, y)
+  ctx.drawImage(flipH(cells['3K4']!), 3 * outCellW, y)
+  ctx.drawImage(flipH(cells['4K1']!), 4 * outCellW, y)
+  ctx.drawImage(flipH(cells['4K2']!), 5 * outCellW, y)
+  y += outCellH
+  ctx.drawImage(cells['2K3']!, 0, y)
+  ctx.drawImage(flipH(cells['2K3']!), outCellW, y)
+  ctx.drawImage(cells['4K3']!, 2 * outCellW, y)
+  ctx.drawImage(flipH(cells['4K3']!), 3 * outCellW, y)
+
+  return new Promise((resolve, reject) => {
+    out.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)
+  })
+}
+
 export function formatTime(sec: number): string {
   const m = Math.floor(sec / 60)
   const s = Math.floor(sec % 60)

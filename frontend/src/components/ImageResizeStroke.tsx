@@ -15,6 +15,7 @@ import {
   cropImageBlob,
   extendImageBottom,
   getTopLeftPixelColor,
+  processAncientCostumeAllActions,
   resizeImageToBlob,
 } from './ParamsStep/utils'
 import { removeGeminiWatermarkFromBlob } from '../lib/geminiWatermark'
@@ -51,6 +52,7 @@ export default function ImageResizeStroke() {
   const [extendLoading, setExtendLoading] = useState(false)
   const [oneClickLoading, setOneClickLoading] = useState(false)
   const [oneClickAllActionsLoading, setOneClickAllActionsLoading] = useState(false)
+  const [ancientCostumeLoading, setAncientCostumeLoading] = useState(false)
 
   const croppedW = originalSize ? Math.max(1, originalSize.w - cropRegion.left - cropRegion.right) : 0
   const croppedH = originalSize ? Math.max(1, originalSize.h - cropRegion.top - cropRegion.bottom) : 0
@@ -285,6 +287,35 @@ export default function ImageResizeStroke() {
     }
   }
 
+  const handleAncientCostumeProcess = async () => {
+    if (!file) return
+    setAncientCostumeLoading(true)
+    setPreviewUrl((old) => { if (old) URL.revokeObjectURL(old); return null })
+    setPreviewBlob(null)
+    try {
+      let blob = await file.arrayBuffer().then((b) => new Blob([b]))
+      blob = await removeGeminiWatermarkFromBlob(blob)
+      blob = await resizeImageToBlob(blob, 256, 256, false, true)
+      const { r, g, b } = await getTopLeftPixelColor(blob)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r2 = new FileReader()
+        r2.onload = () => resolve(r2.result as string)
+        r2.onerror = () => reject(new Error('ERR_READ'))
+        r2.readAsDataURL(blob)
+      })
+      const { dataUrl: matteDataUrl } = await applyChromaKeyContiguousFromTopLeft(dataUrl, r, g, b, 80, 5)
+      blob = await fetch(matteDataUrl).then((res) => res.blob())
+      blob = await processAncientCostumeAllActions(blob)
+      setPreviewBlob(blob)
+      setPreviewUrl(URL.createObjectURL(blob))
+      message.success(t('imgAncientCostumeSuccess'))
+    } catch (e) {
+      message.error(t('exportFailed') + ': ' + formatError(e, t))
+    } finally {
+      setAncientCostumeLoading(false)
+    }
+  }
+
   const hasCrop = cropRegion.left > 0 || cropRegion.top > 0 || cropRegion.right > 0 || cropRegion.bottom > 0
 
   return (
@@ -333,7 +364,7 @@ export default function ImageResizeStroke() {
                 size="large"
                 loading={oneClickLoading}
                 onClick={handleOneClickProcess}
-                disabled={oneClickAllActionsLoading}
+                disabled={oneClickAllActionsLoading || ancientCostumeLoading}
                 style={{ minWidth: 140 }}
               >
                 {t('imgOneClickProcess')}
@@ -345,10 +376,22 @@ export default function ImageResizeStroke() {
                 size="large"
                 loading={oneClickAllActionsLoading}
                 onClick={handleOneClickAllActionsProcess}
-                disabled={oneClickLoading}
+                disabled={oneClickLoading || ancientCostumeLoading}
                 style={{ minWidth: 140 }}
               >
                 {t('imgOneClickAllActionsProcess')}
+              </Button>
+            </div>
+            <div>
+              <Button
+                type="primary"
+                size="large"
+                loading={ancientCostumeLoading}
+                onClick={handleAncientCostumeProcess}
+                disabled={oneClickLoading || oneClickAllActionsLoading}
+                style={{ minWidth: 140 }}
+              >
+                {t('imgAncientCostumeProcess')}
               </Button>
             </div>
           </Space>
