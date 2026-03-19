@@ -307,7 +307,9 @@ function App() {
               <AssetsAndSourceShare />
             </Card>
           ) : mode === 'controlTest' ? (
-            <ControlTest onBack={() => setMode(null)} />
+            <ControlTest onBack={() => setMode(null)} variant="topdown" />
+          ) : mode === 'controlTestArcade' ? (
+            <ControlTest onBack={() => setMode(null)} variant="arcade" />
           ) : mode === 'roninPro' ? (
             <Card>
               <RoninPro onBack={() => setMode(null)} />

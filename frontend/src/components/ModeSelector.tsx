@@ -6,6 +6,19 @@ import { useLanguage } from '../i18n/context'
 
 const { Text } = Typography
 
+/** 游戏手柄图标 */
+function GamepadIcon({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ fontSize: 54, color: '#b55233', marginBottom: 12, ...style }}>
+      <path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
+      <path d="M8 10v4M6 12h4" />
+      <circle cx="16" cy="10" r="1.2" />
+      <circle cx="18" cy="12" r="1.2" />
+      <circle cx="16" cy="14" r="1.2" />
+    </svg>
+  )
+}
+
 const GEM_V2_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
 const GEM_V2_URL_2 = 'https://gemini.google.com/gem/1kEnaydh5Ssne-XxSUQFgVxie93u-kR4P?usp=sharing'
 const GEM_V3_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
@@ -17,7 +30,7 @@ const GEM_SCENE_URL_4 = 'https://gemini.google.com/gem/1VuZIChmmyZtWBRdlLnTQREY1
 const GEM_ILLUST_URL = 'https://gemini.google.com/gem/1IUuJXgHTTbMEgv5D_G0HXSHXxYdcfTZg?usp=sharing'
 const GEM_RPGMAKER_URL = 'https://gemini.google.com/gem/1zkDfsN972fczP66xwCiQ6H0jP7HLtGz5?usp=sharing'
 
-export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'spriteadjust' | 'pixelate' | 'expandshrink' | 'matte' | 'geminiwatermark' | 'nanobananaFullChar' | 'seedanceWatermark' | 'assetsAndSource' | 'controlTest' | 'roninPro' | null
+export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'spriteadjust' | 'pixelate' | 'expandshrink' | 'matte' | 'geminiwatermark' | 'nanobananaFullChar' | 'seedanceWatermark' | 'assetsAndSource' | 'controlTest' | 'controlTestArcade' | 'roninPro' | null
 
 interface Props {
   onSelect: (mode: AppMode) => void
@@ -29,40 +42,71 @@ export default function ModeSelector({ onSelect }: Props) {
   const ownsNft = useNftOwnership(address)
   return (
     <>
-      <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }}>
-        <Col xs={24} md={8}>
+      <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }} align="stretch">
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <Card
             hoverable
             onClick={() => onSelect('controlTest')}
-            styles={{ body: { padding: '16px 24px' } }}
+            styles={{ body: { padding: '16px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
             style={{
               textAlign: 'center',
               cursor: 'pointer',
               borderColor: '#9a8b78',
               background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
               borderWidth: 2,
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
             }}
           >
             <ControlOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
             <div style={{ lineHeight: 1.4 }}>
-              <Text strong style={{ fontSize: 15 }}>{t('moduleControlTest')}</Text>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleControlTestTopdown')}</Text>
             </div>
             <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4 }}>
               {t('moduleControlTestDesc')}
             </Text>
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <Card
             hoverable
-            onClick={() => onSelect('video')}
-            styles={{ body: { padding: '16px 24px' } }}
+            onClick={() => onSelect('controlTestArcade')}
+            styles={{ body: { padding: '16px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
             style={{
               textAlign: 'center',
               cursor: 'pointer',
               borderColor: '#9a8b78',
               background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
               borderWidth: 2,
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
+            }}
+          >
+            <GamepadIcon />
+            <div style={{ lineHeight: 1.4 }}>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleControlTestArcade')}</Text>
+            </div>
+            <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4 }}>
+              {t('moduleControlTestDesc')}
+            </Text>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
+          <Card
+            hoverable
+            onClick={() => onSelect('video')}
+            styles={{ body: { padding: '16px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
+            style={{
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderColor: '#9a8b78',
+              background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+              borderWidth: 2,
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
             }}
           >
             <VideoCameraOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
@@ -74,23 +118,26 @@ export default function ModeSelector({ onSelect }: Props) {
             </Text>
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <a
             href={GEM_RPGMAKER_URL}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flex: 1, minWidth: 0 }}
             title={t('moduleNanobananaRpgmaker')}
           >
             <Card
               hoverable
-              styles={{ body: { padding: '16px 24px' } }}
+              styles={{ body: { padding: '16px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
               style={{
                 textAlign: 'center',
                 cursor: 'pointer',
                 borderColor: '#9a8b78',
                 background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
                 borderWidth: 2,
+                flex: 1,
+                minHeight: 0,
+                width: '100%',
               }}
             >
               <ThunderboltOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12 }} />
