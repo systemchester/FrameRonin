@@ -33,7 +33,6 @@ const GEM_SCENE_URL_4 = 'https://gemini.google.com/gem/1VuZIChmmyZtWBRdlLnTQREY1
 const GEM_ILLUST_URL = 'https://gemini.google.com/gem/1IUuJXgHTTbMEgv5D_G0HXSHXxYdcfTZg?usp=sharing'
 const GEM_RPGMAKER_URL_V1 = 'https://gemini.google.com/gem/1zkDfsN972fczP66xwCiQ6H0jP7HLtGz5?usp=sharing'
 const GEM_RPGMAKER_URL_V1_1 = 'https://gemini.google.com/gem/1kUViEEO8ehmIHGNHThI77xpzSXx2KHFb?usp=sharing'
-const GEM_RPGMAKER_URL_V2 = 'https://gemini.google.com/gem/19Uz_hFhw2PW4Fafsz6SHaTGt74jGDVF5?usp=sharing'
 
 export type AppMode = 'video' | 'image' | 'gif' | 'spritesheet' | 'spriteadjust' | 'pixelate' | 'expandshrink' | 'matte' | 'geminiwatermark' | 'nanobananaFullChar' | 'seedanceWatermark' | 'assetsAndSource' | 'controlTest' | 'controlTestArcade' | 'roninPro' | null
 
@@ -145,9 +144,6 @@ export default function ModeSelector({ onSelect }: Props) {
               </Button>
               <Button type="primary" size="small" onClick={() => window.open(GEM_RPGMAKER_URL_V1_1, '_blank')}>
                 {t('moduleNanobananaRpgmakerGemV1_1')}
-              </Button>
-              <Button type="primary" size="small" onClick={() => window.open(GEM_RPGMAKER_URL_V2, '_blank')}>
-                {t('moduleNanobananaRpgmakerGemV2')}
               </Button>
             </Space>
           </Card>

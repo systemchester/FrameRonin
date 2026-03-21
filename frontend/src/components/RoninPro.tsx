@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Space, Typography } from 'antd'
-import { ArrowLeftOutlined, ExpandOutlined, LockOutlined, MergeCellsOutlined, ScissorOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Row, Typography } from 'antd'
+import {
+  ArrowLeftOutlined,
+  ExperimentOutlined,
+  ExpandOutlined,
+  ForkOutlined,
+  LockOutlined,
+  MergeCellsOutlined,
+  ScissorOutlined,
+} from '@ant-design/icons'
 import { useAuth } from '../auth/context'
 import { RONIN_PRO_REQUIRE_NFT } from '../config/features'
 import { useNftOwnership } from '../hooks/useNftOwnership'
@@ -8,6 +16,44 @@ import { useLanguage } from '../i18n/context'
 import RoninProCustomScale from './RoninProCustomScale'
 import RoninProCustomSlice from './RoninProCustomSlice'
 import RoninProUnifySize from './RoninProUnifySize'
+import RoninProAdvancedPixel from './RoninProAdvancedPixel'
+import RoninProCustomWorkflow from './RoninProCustomWorkflow'
+
+const ACCENT = '#b55233'
+const ICON_BOX = 44
+
+const RONIN_FEATURE_ENTRIES = [
+  {
+    id: 'customSlice' as const,
+    Icon: ScissorOutlined,
+    titleKey: 'roninProCustomSlice',
+    descKey: 'roninProCustomSliceHint',
+  },
+  {
+    id: 'customScale' as const,
+    Icon: ExpandOutlined,
+    titleKey: 'roninProCustomScale',
+    descKey: 'roninProCustomScaleHint',
+  },
+  {
+    id: 'unifySize' as const,
+    Icon: MergeCellsOutlined,
+    titleKey: 'roninProUnifySize',
+    descKey: 'roninProUnifySizeHint',
+  },
+  {
+    id: 'customWorkflow' as const,
+    Icon: ForkOutlined,
+    titleKey: 'roninProCustomWorkflow',
+    descKey: 'roninProCustomWorkflowHint',
+  },
+  {
+    id: 'advancedPixel' as const,
+    Icon: ExperimentOutlined,
+    titleKey: 'roninProAdvancedPixel',
+    descKey: 'roninProAdvancedPixelCardDesc',
+  },
+]
 
 interface RoninProProps {
   onBack?: () => void
@@ -84,8 +130,16 @@ export default function RoninPro({ onBack, deepLinkFeature = null, onDeepLinkCon
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ padding: '20px 24px 32px', maxWidth: 1200, margin: '0 auto' }}>
+      <div
+        style={{
+          marginBottom: activeFeature ? 16 : 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
+      >
         {activeFeature ? (
           <Button
             type="text"
@@ -105,66 +159,111 @@ export default function RoninPro({ onBack, deepLinkFeature = null, onDeepLinkCon
       </div>
 
       {!activeFeature ? (
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Typography.Text type="secondary">{t('moduleRoninProDesc')}</Typography.Text>
-          <Card
-            hoverable
-            style={{ maxWidth: 360 }}
-            onClick={() => setActiveFeature('customSlice')}
+        <div>
+          <Typography.Paragraph
+            type="secondary"
+            style={{
+              marginBottom: 24,
+              marginTop: 0,
+              fontSize: 14,
+              lineHeight: 1.65,
+              maxWidth: 720,
+            }}
           >
-            <Space>
-              <ScissorOutlined style={{ fontSize: 24, color: '#b55233' }} />
-              <div>
-                <Typography.Text strong>{t('roninProCustomSlice')}</Typography.Text>
-                <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('roninProCustomSliceHint')}
-                  </Typography.Text>
-                </div>
-              </div>
-            </Space>
-          </Card>
-          <Card
-            hoverable
-            style={{ maxWidth: 360 }}
-            onClick={() => setActiveFeature('customScale')}
-          >
-            <Space>
-              <ExpandOutlined style={{ fontSize: 24, color: '#b55233' }} />
-              <div>
-                <Typography.Text strong>{t('roninProCustomScale')}</Typography.Text>
-                <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('roninProCustomScaleHint')}
-                  </Typography.Text>
-                </div>
-              </div>
-            </Space>
-          </Card>
-          <Card
-            hoverable
-            style={{ maxWidth: 360 }}
-            onClick={() => setActiveFeature('unifySize')}
-          >
-            <Space>
-              <MergeCellsOutlined style={{ fontSize: 24, color: '#b55233' }} />
-              <div>
-                <Typography.Text strong>{t('roninProUnifySize')}</Typography.Text>
-                <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {t('roninProUnifySizeHint')}
-                  </Typography.Text>
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Space>
+            {t('moduleRoninProDesc')}
+          </Typography.Paragraph>
+          <Row gutter={[20, 20]}>
+            {RONIN_FEATURE_ENTRIES.map(({ id, Icon, titleKey, descKey }) => (
+              <Col key={id} xs={24} sm={24} md={12} lg={12}>
+                <Card
+                  hoverable
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setActiveFeature(id)
+                    }
+                  }}
+                  styles={{
+                    body: {
+                      padding: '18px 20px',
+                      height: '100%',
+                    },
+                  }}
+                  style={{
+                    height: '100%',
+                    minHeight: 112,
+                    borderRadius: 10,
+                    transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                  }}
+                  onClick={() => setActiveFeature(id)}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 16,
+                      alignItems: 'flex-start',
+                      height: '100%',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: ICON_BOX,
+                        height: ICON_BOX,
+                        borderRadius: 10,
+                        background: 'linear-gradient(145deg, rgba(181,82,51,0.14) 0%, rgba(181,82,51,0.06) 100%)',
+                        border: '1px solid rgba(181,82,51,0.22)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon style={{ fontSize: 22, color: ACCENT }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Typography.Text
+                        strong
+                        style={{
+                          fontSize: 15,
+                          display: 'block',
+                          marginBottom: 8,
+                          color: 'var(--ant-color-text)',
+                        }}
+                      >
+                        {t(titleKey)}
+                      </Typography.Text>
+                      <Typography.Text
+                        type="secondary"
+                        style={{
+                          fontSize: 12,
+                          lineHeight: 1.6,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical' as const,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {t(descKey)}
+                      </Typography.Text>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
       ) : activeFeature === 'customSlice' ? (
         <RoninProCustomSlice />
       ) : activeFeature === 'customScale' ? (
         <RoninProCustomScale />
       ) : activeFeature === 'unifySize' ? (
         <RoninProUnifySize />
+      ) : activeFeature === 'customWorkflow' ? (
+        <RoninProCustomWorkflow />
+      ) : activeFeature === 'advancedPixel' ? (
+        <RoninProAdvancedPixel />
       ) : null}
     </div>
   )

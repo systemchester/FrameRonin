@@ -9,12 +9,9 @@ import { formatError } from '../i18n/locales'
 import StashableImage from './StashableImage'
 import StashDropZone from './StashDropZone'
 import {
-  appendTransparentBottom,
   applyChromaKey,
   applyChromaKeyContiguousFromTopLeft,
   applyInnerStroke,
-  applyRpgMakerV2FourRowLayout,
-  trimGridCellsEdgeAndMerge,
   cropImageBlob,
   extendImageBottom,
   getTopLeftPixelColor,
@@ -60,15 +57,11 @@ export default function ImageResizeStroke({ onSendToFineProcess }: ImageResizeSt
   const [extendLoading, setExtendLoading] = useState(false)
   const [oneClickLoading, setOneClickLoading] = useState(false)
   const [oneClickAllActionsLoading, setOneClickAllActionsLoading] = useState(false)
-  const [oneClickRpgMakerV2Loading, setOneClickRpgMakerV2Loading] = useState(false)
-  const [oneClickRpgMakerV2FourRowsLoading, setOneClickRpgMakerV2FourRowsLoading] = useState(false)
   const [ancientCostumeLoading, setAncientCostumeLoading] = useState(false)
 
   const oneClickBusy =
     oneClickLoading ||
     oneClickAllActionsLoading ||
-    oneClickRpgMakerV2Loading ||
-    oneClickRpgMakerV2FourRowsLoading ||
     ancientCostumeLoading
 
   const croppedW = originalSize ? Math.max(1, originalSize.w - cropRegion.left - cropRegion.right) : 0
@@ -304,61 +297,6 @@ export default function ImageResizeStroke({ onSendToFineProcess }: ImageResizeSt
     }
   }
 
-  const runRpgMakerV2PipelineToTrimmedGrid = async (): Promise<Blob> => {
-    let blob = await file!.arrayBuffer().then((b) => new Blob([b]))
-    blob = await removeGeminiWatermarkFromBlob(blob)
-    blob = await resizeImageToBlob(blob, 256, 256, false, true)
-    const { r, g, b } = await getTopLeftPixelColor(blob)
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const r2 = new FileReader()
-      r2.onload = () => resolve(r2.result as string)
-      r2.onerror = () => reject(new Error('ERR_READ'))
-      r2.readAsDataURL(blob)
-    })
-    const { dataUrl: matteDataUrl } = await applyChromaKeyContiguousFromTopLeft(dataUrl, r, g, b, 80, 5)
-    blob = await fetch(matteDataUrl).then((res) => res.blob())
-    blob = await cropImageBlob(blob, { left: 0, top: 0, right: 64, bottom: 0 })
-    blob = await appendTransparentBottom(blob, 64)
-    blob = await applyRpgMakerV2FourRowLayout(blob)
-    blob = await trimGridCellsEdgeAndMerge(blob, { rows: 5, cols: 3, trimPx: 8 })
-    return blob
-  }
-
-  const handleOneClickRpgMakerV2Process = async () => {
-    if (!file) return
-    setOneClickRpgMakerV2Loading(true)
-    setPreviewUrl((old) => { if (old) URL.revokeObjectURL(old); return null })
-    setPreviewBlob(null)
-    try {
-      const blob = await runRpgMakerV2PipelineToTrimmedGrid()
-      setPreviewBlob(blob)
-      setPreviewUrl(URL.createObjectURL(blob))
-      message.success(t('imgOneClickRpgMakerV2Success'))
-    } catch (e) {
-      message.error(t('exportFailed') + ': ' + formatError(e, t))
-    } finally {
-      setOneClickRpgMakerV2Loading(false)
-    }
-  }
-
-  const handleOneClickRpgMakerV2FourRowsProcess = async () => {
-    if (!file) return
-    setOneClickRpgMakerV2FourRowsLoading(true)
-    setPreviewUrl((old) => { if (old) URL.revokeObjectURL(old); return null })
-    setPreviewBlob(null)
-    try {
-      let blob = await runRpgMakerV2PipelineToTrimmedGrid()
-      blob = await cropImageBlob(blob, { left: 0, top: 0, right: 0, bottom: 48 })
-      setPreviewBlob(blob)
-      setPreviewUrl(URL.createObjectURL(blob))
-      message.success(t('imgOneClickRpgMakerV2FourRowsSuccess'))
-    } catch (e) {
-      message.error(t('exportFailed') + ': ' + formatError(e, t))
-    } finally {
-      setOneClickRpgMakerV2FourRowsLoading(false)
-    }
-  }
-
   const handleAncientCostumeProcess = async () => {
     if (!file) return
     setAncientCostumeLoading(true)
@@ -452,30 +390,6 @@ export default function ImageResizeStroke({ onSendToFineProcess }: ImageResizeSt
                 style={{ minWidth: 140 }}
               >
                 {t('imgOneClickAllActionsProcess')}
-              </Button>
-            </div>
-            <div>
-              <Button
-                type="primary"
-                size="large"
-                loading={oneClickRpgMakerV2Loading}
-                onClick={handleOneClickRpgMakerV2Process}
-                disabled={oneClickBusy && !oneClickRpgMakerV2Loading}
-                style={{ minWidth: 160 }}
-              >
-                {t('imgOneClickRpgMakerV2')}
-              </Button>
-            </div>
-            <div>
-              <Button
-                type="primary"
-                size="large"
-                loading={oneClickRpgMakerV2FourRowsLoading}
-                onClick={handleOneClickRpgMakerV2FourRowsProcess}
-                disabled={oneClickBusy && !oneClickRpgMakerV2FourRowsLoading}
-                style={{ minWidth: 180 }}
-              >
-                {t('imgOneClickRpgMakerV2FourRows')}
               </Button>
             </div>
             <div>
