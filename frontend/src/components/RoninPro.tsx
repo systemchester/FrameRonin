@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Col, Row, Typography } from 'antd'
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   ExperimentOutlined,
   ExpandOutlined,
@@ -20,6 +21,7 @@ import RoninProUnifySize from './RoninProUnifySize'
 import RoninProAdvancedPixel from './RoninProAdvancedPixel'
 import RoninProCustomWorkflow from './RoninProCustomWorkflow'
 import RoninProNftClaim from './RoninProNftClaim'
+import RoninProRseprite from './RoninProRseprite'
 
 const ACCENT = '#b55233'
 const ICON_BOX = 44
@@ -61,6 +63,12 @@ const RONIN_FEATURE_ENTRIES = [
     titleKey: 'roninProNftClaim',
     descKey: 'roninProNftClaimDesc',
   },
+  {
+    id: 'rseprite' as const,
+    Icon: AppstoreOutlined,
+    titleKey: 'roninProRseprite',
+    descKey: 'roninProRsepriteCardDesc',
+  },
 ]
 
 interface RoninProProps {
@@ -68,9 +76,16 @@ interface RoninProProps {
   /** 外部一次性格子模块（如首页快捷键），进入后由 onDeepLinkConsumed 清空 */
   deepLinkFeature?: string | null
   onDeepLinkConsumed?: () => void
+  /** 蓝图批量结果图右键「发送到精细处理」 */
+  onSendToFineProcess?: (blob: Blob, suggestedFilename: string) => void
 }
 
-export default function RoninPro({ onBack, deepLinkFeature = null, onDeepLinkConsumed }: RoninProProps) {
+export default function RoninPro({
+  onBack,
+  deepLinkFeature = null,
+  onDeepLinkConsumed,
+  onSendToFineProcess,
+}: RoninProProps) {
   const { t } = useLanguage()
   const { address, isConnected } = useAuth()
   const ownsNft = useNftOwnership(RONIN_PRO_REQUIRE_NFT ? address : null)
@@ -139,7 +154,9 @@ export default function RoninPro({ onBack, deepLinkFeature = null, onDeepLinkCon
 
   /** 自定义流程蓝图需要更大画布：接近视口宽；其它子页保持常规宽度 */
   const shellMaxWidth =
-    activeFeature === 'customWorkflow' ? 'min(calc(100vw - 40px), 1920px)' : 1200
+    activeFeature === 'customWorkflow' || activeFeature === 'rseprite'
+      ? 'min(calc(100vw - 40px), 1920px)'
+      : 1200
 
   return (
     <div
@@ -281,11 +298,13 @@ export default function RoninPro({ onBack, deepLinkFeature = null, onDeepLinkCon
       ) : activeFeature === 'unifySize' ? (
         <RoninProUnifySize />
       ) : activeFeature === 'customWorkflow' ? (
-        <RoninProCustomWorkflow />
+        <RoninProCustomWorkflow onSendToFineProcess={onSendToFineProcess} />
       ) : activeFeature === 'advancedPixel' ? (
         <RoninProAdvancedPixel />
       ) : activeFeature === 'nftClaim' ? (
         <RoninProNftClaim />
+      ) : activeFeature === 'rseprite' ? (
+        <RoninProRseprite />
       ) : null}
     </div>
   )

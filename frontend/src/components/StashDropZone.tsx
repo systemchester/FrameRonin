@@ -19,28 +19,46 @@ export default function StashDropZone({
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
       const url = e.dataTransfer.getData(STASH_DRAG_TYPE)
-      if (!url) return
-      e.preventDefault()
-      e.stopPropagation()
-      try {
-        const res = await fetch(url)
-        const blob = await res.blob()
-        if (maxSizeMB > 0 && blob.size > maxSizeMB * 1024 * 1024) {
-          onSizeError?.()
-          return
+      if (url) {
+        e.preventDefault()
+        e.stopPropagation()
+        try {
+          const res = await fetch(url)
+          const blob = await res.blob()
+          if (maxSizeMB > 0 && blob.size > maxSizeMB * 1024 * 1024) {
+            onSizeError?.()
+            return
+          }
+          const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/webp' ? 'webp' : blob.type === 'image/gif' ? 'gif' : 'png'
+          const file = new File([blob], `stash_${Date.now()}.${ext}`, { type: blob.type })
+          onStashDrop(file)
+        } catch {
+          /* ignore */
         }
-        const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/webp' ? 'webp' : blob.type === 'image/gif' ? 'gif' : 'png'
-        const file = new File([blob], `stash_${Date.now()}.${ext}`, { type: blob.type })
-        onStashDrop(file)
-      } catch {
-        /* ignore */
+        return
+      }
+      const files = e.dataTransfer.files
+      if (files?.length) {
+        e.preventDefault()
+        e.stopPropagation()
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i]
+          if (!f || !f.type.startsWith('image/')) continue
+          if (maxSizeMB > 0 && f.size > maxSizeMB * 1024 * 1024) {
+            onSizeError?.()
+            continue
+          }
+          onStashDrop(f)
+        }
       }
     },
     [onStashDrop, maxSizeMB, onSizeError]
   )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes(STASH_DRAG_TYPE)) {
+    const hasStash = e.dataTransfer.types.includes(STASH_DRAG_TYPE)
+    const hasFiles = e.dataTransfer.types.includes('Files')
+    if (hasStash || hasFiles) {
       e.preventDefault()
       e.stopPropagation()
       e.dataTransfer.dropEffect = 'copy'

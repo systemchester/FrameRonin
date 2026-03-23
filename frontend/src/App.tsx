@@ -6,6 +6,7 @@ import enUS from 'antd/locale/en_US'
 import jaJP from 'antd/locale/ja_JP'
 import type { ThemeConfig } from 'antd'
 import { AuthProvider, useAuth } from './auth/context'
+import { LocalWorkspaceProvider } from './localWorkspace/context'
 import { ImageStashProvider } from './stash/context'
 import { useLanguage } from './i18n/context'
 import ImageStashPanel from './components/ImageStashPanel'
@@ -163,6 +164,24 @@ function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [mode])
 
+  /** 首页按 T 进入 RoninPro → 自定义流程蓝图 */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (mode !== null) return
+      if (e.code !== 'KeyT') return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const el = document.activeElement
+      const tag = el?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea') return
+      if (el instanceof HTMLElement && el.isContentEditable) return
+      e.preventDefault()
+      setRoninProDeepLink('customWorkflow')
+      setMode('roninPro')
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode])
+
   /** 首页按 G 进入 Gemini 水印去除 */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -225,6 +244,7 @@ function App() {
   return (
     <ConfigProvider locale={antdLocales[lang]} theme={wastelandTheme}>
       <AuthProvider>
+      <LocalWorkspaceProvider>
       <ImageStashProvider>
       <AntdApp>
       <ImageStashPanel />
@@ -436,6 +456,14 @@ function App() {
                 onBack={() => { setRoninProDeepLink(null); setMode(null) }}
                 deepLinkFeature={roninProDeepLink}
                 onDeepLinkConsumed={consumeRoninProDeepLink}
+                onSendToFineProcess={(blob, suggestedFilename) => {
+                  const name = /\.(png|jpe?g|webp)$/i.test(suggestedFilename)
+                    ? suggestedFilename
+                    : `${suggestedFilename}.png`
+                  setImageHandoffToFine(new File([blob], name, { type: blob.type || 'image/png' }))
+                  setImageSubMode('fine')
+                  setMode('image')
+                }}
               />
             </Card>
           ) : (
@@ -516,6 +544,7 @@ function App() {
       </Layout>
       </AntdApp>
       </ImageStashProvider>
+      </LocalWorkspaceProvider>
       </AuthProvider>
     </ConfigProvider>
   )

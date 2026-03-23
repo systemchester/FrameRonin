@@ -1,13 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CloseOutlined } from '@ant-design/icons'
-import type { GraphNode, WorkflowEdge, WorkflowNodeType } from '../lib/roninProWorkflow'
+import type { GraphNode, WorkflowEdge, WorkflowInputPort, WorkflowNodeType } from '../lib/roninProWorkflow'
+import { WORKFLOW_DRAG_INPUT_IMAGE_INDEX } from '../lib/roninProWorkflow'
 
-const WORLD_W = 8192
-const WORLD_H = 6144
+export const BLUEPRINT_WORLD_W = 8192
+export const BLUEPRINT_WORLD_H = 6144
+const WORLD_W = BLUEPRINT_WORLD_W
+const WORLD_H = BLUEPRINT_WORLD_H
 export const BLUEPRINT_NODE_WIDTH = 252
+/** 「输入图」节点收窄，宽度与缩略图列大致一致 */
+export const BLUEPRINT_INPUT_IMAGE_NODE_WIDTH = 136
 const HEADER_H = 40
 export const BLUEPRINT_PIN_Y = HEADER_H / 2
 const PIN_HIT = 28
+/** 双背景抠图：左列上下两个输入口（世界坐标系内相对节点 top 的 Y 偏移） */
+const DOUBLE_BG_PIN_A_Y = 16
+const DOUBLE_BG_PIN_B_Y = 52
+
+function inputPinWorld(n: GraphNode, port?: WorkflowInputPort): { x: number; y: number } {
+  if (n.type === 'matteDoubleBackground') {
+    const yOff = port === 'inB' ? DOUBLE_BG_PIN_B_Y : DOUBLE_BG_PIN_A_Y
+    return { x: n.x, y: n.y + yOff }
+  }
+  return { x: n.x, y: n.y + BLUEPRINT_PIN_Y }
+}
 
 /** 自定义均分重组：按列数与切块编号位数估算节点宽度，避免表格局部横向滚动条 */
 function customRearrangeMetrics(n: GraphNode) {
@@ -21,6 +37,8 @@ function customRearrangeMetrics(n: GraphNode) {
 }
 
 export function getBlueprintNodeWidth(n: GraphNode): number {
+  if (n.type === 'workflowInputImage') return BLUEPRINT_INPUT_IMAGE_NODE_WIDTH
+  if (n.type === 'matteDoubleBackground') return Math.max(BLUEPRINT_NODE_WIDTH, 268)
   if (n.type !== 'customGridRearrange') return BLUEPRINT_NODE_WIDTH
   const { oc, inputW } = customRearrangeMetrics(n)
   const perCell = inputW + 10
@@ -37,6 +55,24 @@ export function getCustomRearrangeInputWidth(n: GraphNode): number {
 
 type ConnectingState = { sourceId: string } | null
 
+export type BlueprintToolPlaceAction =
+  | { type: 'inputImage'; imageIndex1: number }
+  | { type: 'resize' }
+
+function digitFromKeyCode(code: string): number | null {
+  const dm = /^Digit(\d)$/.exec(code)
+  if (dm) {
+    const n = parseInt(dm[1]!, 10)
+    return n >= 1 && n <= 9 ? n : null
+  }
+  const nm = /^Numpad(\d)$/.exec(code)
+  if (nm) {
+    const n = parseInt(nm[1]!, 10)
+    return n >= 1 && n <= 9 ? n : null
+  }
+  return null
+}
+
 export interface WorkflowBlueprintCanvasProps {
   nodes: GraphNode[]
   edges: WorkflowEdge[]
@@ -46,6 +82,10 @@ export interface WorkflowBlueprintCanvasProps {
   renderNodeBody: (n: GraphNode) => React.ReactNode
   tHint: (key: string) => string
   onPaletteDrop: (type: WorkflowNodeType, x: number, y: number) => void
+  /** 从批量图列表拖入的 1-based 序号 */
+  onInputImageDrop?: (imageIndex1: number, x: number, y: number) => void
+  /** 按住快捷键后在空白处左键：放置节点（坐标为画布世界坐标，已由内部按节点宽度钳位） */
+  onToolPlaceAt?: (action: BlueprintToolPlaceAction, x: number, y: number) => void
 }
 
 function bezierPath(x1: number, y1: number, x2: number, y2: number): string {
@@ -62,9 +102,13 @@ export default function WorkflowBlueprintCanvas({
   renderNodeBody,
   tHint,
   onPaletteDrop,
+  onInputImageDrop,
+  onToolPlaceAt,
 }: WorkflowBlueprintCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const worldRef = useRef<HTMLDivElement>(null)
+  /** 按住数字 1–9：对应序号输入图；按住 S：缩放节点 */
+  const heldPlaceRef = useRef({ heldDigit: 0 as number, keyS: false })
   const [pan, setPan] = useState({ x: 40, y: 40 })
   const [scale, setScale] = useState(0.85)
   const [connecting, setConnecting] = useState<ConnectingState>(null)
@@ -94,12 +138,14 @@ export default function WorkflowBlueprintCanvas({
     }
   }, [])
 
-  const outputPin = useCallback((n: GraphNode) => {
-    return { x: n.x + getBlueprintNodeWidth(n), y: n.y + BLUEPRINT_PIN_Y }
+  const snapNodeTopLeft = useCallback((w: { x: number; y: number }, nodeW = BLUEPRINT_NODE_WIDTH) => {
+    const x = Math.max(0, Math.min(WORLD_W - nodeW, w.x - nodeW / 2))
+    const y = Math.max(0, Math.min(WORLD_H - 120, w.y - HEADER_H))
+    return { x, y }
   }, [])
 
-  const inputPin = useCallback((n: GraphNode) => {
-    return { x: n.x, y: n.y + BLUEPRINT_PIN_Y }
+  const outputPin = useCallback((n: GraphNode) => {
+    return { x: n.x + getBlueprintNodeWidth(n), y: n.y + BLUEPRINT_PIN_Y }
   }, [])
 
   useEffect(() => {
@@ -140,22 +186,50 @@ export default function WorkflowBlueprintCanvas({
       const we = wireEndRef.current
       if (c && we) {
         const list = nodesRef.current
-        const target = list.find((n) => {
-          if (n.id === c.sourceId) return false
-          const p = { x: n.x, y: n.y + BLUEPRINT_PIN_Y }
-          const dx = we.x - p.x
-          const dy = we.y - p.y
-          return dx * dx + dy * dy < PIN_HIT * PIN_HIT
-        })
-        if (target) {
+        const hit2 = PIN_HIT * PIN_HIT
+        let best: { n: GraphNode; port?: WorkflowInputPort } | null = null
+        let bestD = hit2
+        for (const n of list) {
+          if (n.id === c.sourceId) continue
+          if (n.type === 'matteDoubleBackground') {
+            for (const port of ['inA', 'inB'] as const) {
+              const p = inputPinWorld(n, port)
+              const dx = we.x - p.x
+              const dy = we.y - p.y
+              const d2 = dx * dx + dy * dy
+              if (d2 < bestD) {
+                bestD = d2
+                best = { n, port }
+              }
+            }
+          } else {
+            const p = inputPinWorld(n)
+            const dx = we.x - p.x
+            const dy = we.y - p.y
+            const d2 = dx * dx + dy * dy
+            if (d2 < bestD) {
+              bestD = d2
+              best = { n }
+            }
+          }
+        }
+        if (best && bestD < hit2) {
           const sid = c.sourceId
-          const tid = target.id
+          const tid = best.n.id
+          const tPort =
+            best.n.type === 'matteDoubleBackground' ? best.port : undefined
           setEdges((prev) => {
-            const next = prev.filter((ed) => ed.source !== sid && ed.target !== tid)
+            let next = prev.filter((ed) => ed.source !== sid)
+            if (tPort === 'inA' || tPort === 'inB') {
+              next = next.filter((ed) => !(ed.target === tid && ed.targetPort === tPort))
+            } else {
+              next = next.filter((ed) => ed.target !== tid)
+            }
             next.push({
-              id: `e-${sid}-${tid}-${Date.now()}`,
+              id: `e-${sid}-${tid}-${tPort ?? 'in'}-${Date.now()}`,
               source: sid,
               target: tid,
+              ...(tPort ? { targetPort: tPort } : {}),
             })
             return next
           })
@@ -173,6 +247,45 @@ export default function WorkflowBlueprintCanvas({
       window.removeEventListener('mouseup', onUp)
     }
   }, [setNodes, setEdges, scale, clientToWorld])
+
+  useEffect(() => {
+    const isTypingTarget = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null
+      if (!t) return false
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return true
+      if (t.isContentEditable) return true
+      return !!t.closest?.('input, textarea, select, [contenteditable="true"]')
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return
+      const d = digitFromKeyCode(e.code)
+      if (d !== null) {
+        heldPlaceRef.current.heldDigit = d
+        return
+      }
+      if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        heldPlaceRef.current.keyS = true
+      }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      const d = digitFromKeyCode(e.code)
+      if (d !== null && heldPlaceRef.current.heldDigit === d) {
+        heldPlaceRef.current.heldDigit = 0
+      }
+      if (e.code === 'KeyS') heldPlaceRef.current.keyS = false
+    }
+    const onBlur = () => {
+      heldPlaceRef.current = { heldDigit: 0, keyS: false }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -207,6 +320,25 @@ export default function WorkflowBlueprintCanvas({
   }
 
   const onWorldBackgroundMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0 && onToolPlaceAt) {
+      const h = heldPlaceRef.current
+      if (h.heldDigit >= 1 && h.heldDigit <= 9) {
+        e.stopPropagation()
+        e.preventDefault()
+        const w = clientToWorld(e.clientX, e.clientY)
+        const { x, y } = snapNodeTopLeft(w, BLUEPRINT_INPUT_IMAGE_NODE_WIDTH)
+        onToolPlaceAt({ type: 'inputImage', imageIndex1: h.heldDigit }, x, y)
+        return
+      }
+      if (h.keyS) {
+        e.stopPropagation()
+        e.preventDefault()
+        const w = clientToWorld(e.clientX, e.clientY)
+        const { x, y } = snapNodeTopLeft(w, BLUEPRINT_NODE_WIDTH)
+        onToolPlaceAt({ type: 'resize' }, x, y)
+        return
+      }
+    }
     if (e.button === 1 || e.button === 2) {
       e.stopPropagation()
       startPan(e)
@@ -244,11 +376,20 @@ export default function WorkflowBlueprintCanvas({
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
+    const imgRaw = e.dataTransfer.getData(WORKFLOW_DRAG_INPUT_IMAGE_INDEX)
+    if (imgRaw && onInputImageDrop) {
+      const idx = parseInt(imgRaw, 10)
+      if (Number.isFinite(idx) && idx >= 1) {
+        const w = clientToWorld(e.clientX, e.clientY)
+        const { x, y } = snapNodeTopLeft(w, BLUEPRINT_INPUT_IMAGE_NODE_WIDTH)
+        onInputImageDrop(idx, x, y)
+      }
+      return
+    }
     const type = e.dataTransfer.getData('application/workflow-node-type') as WorkflowNodeType
     if (!type) return
     const w = clientToWorld(e.clientX, e.clientY)
-    const x = Math.max(0, Math.min(WORLD_W - BLUEPRINT_NODE_WIDTH, w.x - BLUEPRINT_NODE_WIDTH / 2))
-    const y = Math.max(0, Math.min(WORLD_H - 120, w.y - HEADER_H))
+    const { x, y } = snapNodeTopLeft(w)
     onPaletteDrop(type, x, y)
   }
 
@@ -346,7 +487,7 @@ export default function WorkflowBlueprintCanvas({
               const tn = nodes.find((n) => n.id === ed.target)
               if (!sn || !tn) return null
               const p0 = outputPin(sn)
-              const p1 = inputPin(tn)
+              const p1 = inputPinWorld(tn, ed.targetPort)
               const d = bezierPath(p0.x, p0.y, p1.x, p1.y)
               return (
                 <path
@@ -369,7 +510,7 @@ export default function WorkflowBlueprintCanvas({
               const tn = nodes.find((n) => n.id === ed.target)
               if (!sn || !tn) return null
               const p0 = outputPin(sn)
-              const p1 = inputPin(tn)
+              const p1 = inputPinWorld(tn, ed.targetPort)
               const d = bezierPath(p0.x, p0.y, p1.x, p1.y)
               const sel = selectedEdgeId === ed.id
               return (
@@ -420,22 +561,59 @@ export default function WorkflowBlueprintCanvas({
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
               >
-                <div
-                  title={tHint('roninProWorkflowPinIn')}
-                  style={{
-                    position: 'absolute',
-                    left: -10,
-                    top: BLUEPRINT_PIN_Y - 8,
-                    width: 16,
-                    height: 16,
-                    borderRadius: '50%',
-                    background: '#1a1d24',
-                    border: '2px solid #c5d4e8',
-                    boxShadow: '0 0 6px rgba(197,212,232,0.4)',
-                    zIndex: 5,
-                    pointerEvents: 'none',
-                  }}
-                />
+                {n.type === 'matteDoubleBackground' ? (
+                  <>
+                    <div
+                      title={tHint('roninProWorkflowPinInBlack')}
+                      style={{
+                        position: 'absolute',
+                        left: -10,
+                        top: DOUBLE_BG_PIN_A_Y - 8,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#1a1d24',
+                        border: '2px solid #9ab8e8',
+                        boxShadow: '0 0 6px rgba(154,184,232,0.45)',
+                        zIndex: 5,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <div
+                      title={tHint('roninProWorkflowPinInWhite')}
+                      style={{
+                        position: 'absolute',
+                        left: -10,
+                        top: DOUBLE_BG_PIN_B_Y - 8,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#1a1d24',
+                        border: '2px solid #e8e0c5',
+                        boxShadow: '0 0 6px rgba(232,224,197,0.4)',
+                        zIndex: 5,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </>
+                ) : (
+                  <div
+                    title={tHint('roninProWorkflowPinIn')}
+                    style={{
+                      position: 'absolute',
+                      left: -10,
+                      top: BLUEPRINT_PIN_Y - 8,
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      background: '#1a1d24',
+                      border: '2px solid #c5d4e8',
+                      boxShadow: '0 0 6px rgba(197,212,232,0.4)',
+                      zIndex: 5,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
                 <div
                   title={tHint('roninProWorkflowPinOut')}
                   onMouseDown={(e) => onOutputMouseDown(e, n.id)}
@@ -507,7 +685,8 @@ export default function WorkflowBlueprintCanvas({
         </div>
       </div>
       <div style={{ fontSize: 11, color: '#888' }}>
-        {tHint('roninProWorkflowBlueprintControls')}
+        <div>{tHint('roninProWorkflowBlueprintControls')}</div>
+        {onToolPlaceAt && <div style={{ marginTop: 4 }}>{tHint('roninProWorkflowBlueprintHotkeys')}</div>}
       </div>
     </div>
   )

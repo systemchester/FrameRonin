@@ -1,8 +1,9 @@
-import { Fragment, useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   Button,
   Checkbox,
   Col,
+  Dropdown,
   Input,
   InputNumber,
   message,
@@ -11,15 +12,17 @@ import {
   Typography,
   Upload,
 } from 'antd'
-import { ExpandOutlined, OrderedListOutlined } from '@ant-design/icons'
+import { CloseOutlined, ExpandOutlined, OrderedListOutlined, PlusOutlined } from '@ant-design/icons'
 import { useLanguage } from '../i18n/context'
 import {
+  WORKFLOW_DRAG_INPUT_IMAGE_INDEX,
   WORKFLOW_PALETTE,
   buildDefaultRearrangeGrid,
+  computeWorkflowRunStrategy,
   createGraphNode,
-  getExecutionOrder,
   parseWorkflowGraph,
   resizeRearrangeGrid,
+  runDagExecution,
   runWorkflowOnBlob,
   sanitizeWorkflowPresetFileBase,
   serializeWorkflowGraph,
@@ -27,7 +30,12 @@ import {
   type WorkflowEdge,
   type WorkflowNodeType,
 } from '../lib/roninProWorkflow'
+import StashDropZone from './StashDropZone'
 import WorkflowBlueprintCanvas, {
+  BLUEPRINT_INPUT_IMAGE_NODE_WIDTH,
+  BLUEPRINT_NODE_WIDTH,
+  BLUEPRINT_WORLD_W,
+  type BlueprintToolPlaceAction,
   getBlueprintNodeWidth,
   getCustomRearrangeInputWidth,
 } from './WorkflowBlueprintCanvas'
@@ -70,9 +78,11 @@ const PALETTE_FLOAT_SCROLL: CSSProperties = {
 const NODE_LABEL_I18N: Record<WorkflowNodeType, string> = {
   geminiWatermarkRemove: 'roninProWorkflowNode_geminiWatermarkRemove',
   resize: 'roninProWorkflowNode_resize',
+  resizeHard: 'roninProWorkflowNode_resizeHard',
   crop: 'roninProWorkflowNode_crop',
   matteContiguous: 'roninProWorkflowNode_matteContiguous',
   matteGlobal: 'roninProWorkflowNode_matteGlobal',
+  matteDoubleBackground: 'roninProWorkflowNode_matteDoubleBackground',
   padExpand: 'roninProWorkflowNode_padExpand',
   evenSplitStrip: 'roninProWorkflowNode_evenSplitStrip',
   mergeStrip: 'roninProWorkflowNode_mergeStrip',
@@ -85,6 +95,7 @@ const NODE_LABEL_I18N: Record<WorkflowNodeType, string> = {
   gridCopyRow: 'roninProWorkflowNode_gridCopyRow',
   gridCopyCol: 'roninProWorkflowNode_gridCopyCol',
   customGridRearrange: 'roninProWorkflowNode_customGridRearrange',
+  workflowInputImage: 'roninProWorkflowNode_workflowInputImage',
 }
 
 /** 节点参数输入框：钳位到 [min,max]，非法则用 fallback */
@@ -102,11 +113,28 @@ function wfClampInt(
 
 const INPUT_FULL: CSSProperties = { width: '100%' }
 
-export default function RoninProCustomWorkflow() {
+type WorkflowInputFile = { id: string; file: File; thumbUrl: string }
+
+function createWorkflowInputFile(file: File): WorkflowInputFile {
+  const id =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `f-${Date.now()}-${Math.random()}`
+  return { id, file, thumbUrl: URL.createObjectURL(file) }
+}
+
+export interface RoninProCustomWorkflowProps {
+  /** 右键结果图「发送到精细处理」：跳转像素图片 → 精细处理并带入该图 */
+  onSendToFineProcess?: (blob: Blob, suggestedFilename: string) => void
+}
+
+export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninProCustomWorkflowProps = {}) {
   const { t } = useLanguage()
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>([])
   const [graphEdges, setGraphEdges] = useState<WorkflowEdge[]>([])
-  const [fileItems, setFileItems] = useState<{ id: string; file: File }[]>([])
+  const [fileItems, setFileItems] = useState<WorkflowInputFile[]>([])
+  const fileItemsRef = useRef(fileItems)
+  fileItemsRef.current = fileItems
   const [results, setResults] = useState<{ name: string; url: string }[]>([])
   const [running, setRunning] = useState(false)
   /** 导出预设名：写入 JSON 的 presetName，并用于下载文件名 */
@@ -114,11 +142,20 @@ export default function RoninProCustomWorkflow() {
 
   useEffect(() => {
     return () => {
+      fileItemsRef.current.forEach(({ thumbUrl }) => URL.revokeObjectURL(thumbUrl))
       setResults((prev) => {
         prev.forEach((r) => URL.revokeObjectURL(r.url))
         return []
       })
     }
+  }, [])
+
+  const removeWorkflowInputFile = useCallback((uid: string) => {
+    setFileItems((prev) => {
+      const item = prev.find((x) => x.id === uid)
+      if (item) URL.revokeObjectURL(item.thumbUrl)
+      return prev.filter((x) => x.id !== uid)
+    })
   }, [])
 
   const updateNodeParam = useCallback((id: string, key: string, value: number) => {
@@ -203,7 +240,7 @@ export default function RoninProCustomWorkflow() {
       } else if (prev.length) {
         const last = prev[prev.length - 1]!
         const lastW = getBlueprintNodeWidth(last)
-        nx = Math.min(8192 - lastW - 28, last.x + lastW + 28)
+        nx = Math.min(BLUEPRINT_WORLD_W - lastW - 28, last.x + lastW + 28)
       } else {
         nx = 220
       }
@@ -211,6 +248,48 @@ export default function RoninProCustomWorkflow() {
       return [...prev, createGraphNode(type, nx, ny)]
     })
   }, [])
+
+  /**
+   * 添加「输入图」节点。传入 x,y 时用该位置（如画布点击/拖放）；省略时按最后一个节点右侧自动排布。
+   */
+  const addInputImageAt = useCallback((imageIndex1: number, x?: number, y?: number) => {
+    setGraphNodes((prev) => {
+      let nx: number
+      let ny: number
+      if (x !== undefined && y !== undefined) {
+        nx = Math.max(0, Math.min(BLUEPRINT_WORLD_W - BLUEPRINT_INPUT_IMAGE_NODE_WIDTH, x))
+        ny = y
+      } else if (prev.length) {
+        const last = prev[prev.length - 1]!
+        const lastW = getBlueprintNodeWidth(last)
+        const newW = BLUEPRINT_INPUT_IMAGE_NODE_WIDTH
+        nx = Math.min(BLUEPRINT_WORLD_W - newW - 28, last.x + lastW + 28)
+        ny = last.y
+      } else {
+        nx = 220
+        ny = 200
+      }
+      const node = createGraphNode('workflowInputImage', nx, ny)
+      const nFiles = fileItemsRef.current.length
+      const idx = Math.min(Math.max(1, Math.round(imageIndex1)), Math.max(1, nFiles))
+      return [...prev, { ...node, params: { ...node.params, imageIndex: idx } }]
+    })
+  }, [])
+
+  const onBlueprintToolPlaceAt = useCallback(
+    (action: BlueprintToolPlaceAction, x: number, y: number) => {
+      if (action.type === 'resize') {
+        addNodeAt('resize', x, y)
+        return
+      }
+      if (fileItemsRef.current.length === 0) {
+        message.warning(t('roninProWorkflowNoFiles'))
+        return
+      }
+      addInputImageAt(action.imageIndex1, x, y)
+    },
+    [addInputImageAt, addNodeAt, t]
+  )
 
   const handleRunAll = async () => {
     if (graphNodes.length === 0) {
@@ -221,9 +300,9 @@ export default function RoninProCustomWorkflow() {
       message.warning(t('roninProWorkflowNoFiles'))
       return
     }
-    const orderResult = getExecutionOrder(graphNodes, graphEdges)
-    if (!orderResult.ok) {
-      message.warning(t(`roninProWorkflowGraphErr_${orderResult.reason}`))
+    const strategyResult = computeWorkflowRunStrategy(graphNodes, graphEdges, fileItems.length)
+    if (!strategyResult.ok) {
+      message.warning(t(`roninProWorkflowGraphErr_${strategyResult.reason}`))
       return
     }
     setRunning(true)
@@ -233,11 +312,59 @@ export default function RoninProCustomWorkflow() {
     })
     const out: { name: string; url: string }[] = []
     try {
-      for (const { file } of fileItems) {
-        const blob = await runWorkflowOnBlob(file, orderResult.order)
+      const { strategy } = strategyResult
+      if (strategy.kind === 'all') {
+        for (const { file } of fileItems) {
+          const blob = await runWorkflowOnBlob(file, strategy.order)
+          const url = URL.createObjectURL(blob)
+          const base = file.name.replace(/\.[^.]+$/, '')
+          out.push({ name: `${base}_workflow.png`, url })
+        }
+      } else if (strategy.kind === 'targeted') {
+        for (const plan of strategy.plans) {
+          const item = fileItems[plan.fileIndex0]
+          if (!item) continue
+          const blob = await runWorkflowOnBlob(item.file, plan.steps)
+          const url = URL.createObjectURL(blob)
+          const base = item.file.name.replace(/\.[^.]+$/, '')
+          out.push({ name: `${base}_workflow.png`, url })
+        }
+      } else if (strategy.kind === 'dag_per_file') {
+        for (const { file } of fileItems) {
+          const blob = await runDagExecution(
+            strategy.topo,
+            strategy.edges,
+            strategy.sinkId,
+            () => file
+          )
+          const url = URL.createObjectURL(blob)
+          const base = file.name.replace(/\.[^.]+$/, '')
+          out.push({ name: `${base}_workflow.png`, url })
+        }
+      } else if (strategy.kind === 'dag_once') {
+        const blob = await runDagExecution(
+          strategy.topo,
+          strategy.edges,
+          strategy.sinkId,
+          (h) => {
+            const maxIdx = Math.max(1, fileItems.length)
+            const idx1 = Math.min(
+              Math.max(1, Math.round(h.params.imageIndex ?? 1)),
+              maxIdx
+            )
+            return fileItems[idx1 - 1]!.file
+          }
+        )
         const url = URL.createObjectURL(blob)
-        const base = file.name.replace(/\.[^.]+$/, '')
-        out.push({ name: `${base}_workflow.png`, url })
+        const heads = strategy.topo.filter((n) => !strategy.edges.some((e) => e.target === n.id))
+        const firstIn = heads.find((n) => n.type === 'workflowInputImage')
+        const maxIdx = Math.max(1, fileItems.length)
+        const idx1 = firstIn
+          ? Math.min(Math.max(1, Math.round(firstIn.params.imageIndex ?? 1)), maxIdx)
+          : 1
+        const refFile = fileItems[idx1 - 1]?.file ?? fileItems[0]!.file
+        const base = refFile.name.replace(/\.[^.]+$/, '')
+        out.push({ name: `${base}_workflow_doublebg.png`, url })
       }
       setResults(out)
       message.success(t('roninProWorkflowDone'))
@@ -320,6 +447,53 @@ export default function RoninProCustomWorkflow() {
       const id = n.id
       const p = n.params
       switch (n.type) {
+        case 'workflowInputImage': {
+          const maxIdx = Math.max(1, fileItems.length)
+          const idx1 = wfClampInt(p.imageIndex, 1, maxIdx, 1)
+          const thumbUrl = fileItems[idx1 - 1]?.thumbUrl
+          return (
+            <div>
+              {thumbUrl ? (
+                <div
+                  style={{
+                    marginBottom: 8,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: 48,
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                    background: 'rgba(0,0,0,0.25)',
+                    border: '1px solid #3d4555',
+                  }}
+                >
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: 56,
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              ) : null}
+              <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowInputImageIndex')}</Text>
+              <InputNumber
+                min={1}
+                max={maxIdx}
+                size="small"
+                style={INPUT_FULL}
+                value={idx1}
+                onChange={(v) => updateNodeParam(id, 'imageIndex', wfClampInt(v, 1, maxIdx, 1))}
+              />
+            </div>
+          )
+        }
         case 'geminiWatermarkRemove':
           return <Text style={{ color: '#9aa3b5', fontSize: 12 }}>{t('roninProWorkflowNoParams')}</Text>
         case 'resize':
@@ -363,6 +537,40 @@ export default function RoninProCustomWorkflow() {
                   {t('roninProWorkflowPixelated')}
                 </Checkbox>
               </Space>
+            </Space>
+          )
+        case 'resizeHard':
+          return (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProCustomScaleTargetW')}</Text>
+                <InputNumber
+                  min={8}
+                  max={2048}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.w ?? 256)}
+                  onChange={(v) => updateNodeParam(id, 'w', wfClampInt(v, 8, 2048, 256))}
+                />
+              </div>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProCustomScaleTargetH')}</Text>
+                <InputNumber
+                  min={8}
+                  max={2048}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.h ?? 256)}
+                  onChange={(v) => updateNodeParam(id, 'h', wfClampInt(v, 8, 2048, 256))}
+                />
+              </div>
+              <Checkbox
+                checked={(p.keepAspect ?? 0) !== 0}
+                onChange={(e) => updateNodeParam(id, 'keepAspect', e.target.checked ? 1 : 0)}
+                style={{ color: '#c8d0e0' }}
+              >
+                {t('roninProCustomScaleKeepAspect')}
+              </Checkbox>
             </Space>
           )
         case 'crop':
@@ -409,6 +617,34 @@ export default function RoninProCustomWorkflow() {
                   style={INPUT_FULL}
                   value={Math.round(p.feather ?? 5)}
                   onChange={(v) => updateNodeParam(id, 'feather', wfClampInt(v, 0, 40, 5))}
+                />
+              </div>
+            </Space>
+          )
+        case 'matteDoubleBackground':
+          return (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Text style={{ color: '#8b93a5', fontSize: 11 }}>{t('roninProWorkflowDoubleBgPortsHint')}</Text>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowDoubleBgTolerance')}</Text>
+                <InputNumber
+                  min={0}
+                  max={100}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.tolerance ?? 50)}
+                  onChange={(v) => updateNodeParam(id, 'tolerance', wfClampInt(v, 0, 100, 50))}
+                />
+              </div>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowDoubleBgEdgeContrast')}</Text>
+                <InputNumber
+                  min={0}
+                  max={100}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.edgeContrast ?? 50)}
+                  onChange={(v) => updateNodeParam(id, 'edgeContrast', wfClampInt(v, 0, 100, 50))}
                 />
               </div>
             </Space>
@@ -823,12 +1059,12 @@ export default function RoninProCustomWorkflow() {
           return null
       }
     },
-    [t, updateNodeParam, updateCustomRearrangeDimension, updateCustomRearrangeCell, fillRearrangeGridAutoSequence]
+    [t, updateNodeParam, updateCustomRearrangeDimension, updateCustomRearrangeCell, fillRearrangeGridAutoSequence, fileItems]
   )
 
   return (
     <Fragment>
-    <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: '100%' }}>
+    <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: '100%', marginRight: 'min(336px, calc(100vw - 32px))' }}>
       <Text type="secondary">{t('roninProCustomWorkflowHint')}</Text>
 
       <WorkflowBlueprintCanvas
@@ -840,6 +1076,8 @@ export default function RoninProCustomWorkflow() {
         renderNodeBody={renderNodeBody}
         tHint={t}
         onPaletteDrop={(type, x, y) => addNodeAt(type, x, y)}
+        onInputImageDrop={(imageIndex1, x, y) => addInputImageAt(imageIndex1, x, y)}
+        onToolPlaceAt={onBlueprintToolPlaceAt}
       />
 
       <div>
@@ -875,36 +1113,146 @@ export default function RoninProCustomWorkflow() {
 
       <div>
         <Text strong>{t('roninProWorkflowImages')}</Text>
-        <Dragger
-          multiple
-          accept={IMAGE_ACCEPT.join(',')}
-          showUploadList
-          fileList={fileItems.map(({ id, file }) => ({
-            uid: id,
-            name: file.name,
-            status: 'done' as const,
-          }))}
-          beforeUpload={(file) => {
-            const id =
-              typeof crypto !== 'undefined' && crypto.randomUUID
-                ? crypto.randomUUID()
-                : `f-${Date.now()}-${Math.random()}`
-            setFileItems((prev) => [...prev, { id, file }])
-            return false
+        <StashDropZone
+          onStashDrop={(file) => {
+            setFileItems((prev) => [...prev, createWorkflowInputFile(file)])
           }}
-          onRemove={(file) => {
-            setFileItems((prev) => prev.filter((x) => x.id !== file.uid))
-          }}
+          maxSizeMB={20}
+          onSizeError={() => message.error(t('imageSizeError'))}
         >
-          <p className="ant-upload-drag-icon">
-            <ExpandOutlined />
-          </p>
-          <p className="ant-upload-text">{t('roninProWorkflowUploadHint')}</p>
-        </Dragger>
+          <Dragger
+            multiple
+            accept={IMAGE_ACCEPT.join(',')}
+            showUploadList={false}
+            beforeUpload={(file) => {
+              setFileItems((prev) => [...prev, createWorkflowInputFile(file)])
+              return false
+            }}
+          >
+            <p className="ant-upload-drag-icon">
+              <ExpandOutlined />
+            </p>
+            <p className="ant-upload-text">{t('roninProWorkflowUploadHint')}</p>
+          </Dragger>
+          {fileItems.length > 0 && (
+            <div
+              className="ronin-workflow-input-thumbs"
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 14,
+                marginTop: 14,
+                alignItems: 'flex-start',
+              }}
+            >
+              {fileItems.map((item, idx) => (
+                <div
+                  key={item.id}
+                  style={{
+                    position: 'relative',
+                    width: 104,
+                    flexShrink: 0,
+                    textAlign: 'center',
+                  }}
+                >
+                  <div
+                    draggable
+                    title={t('roninProWorkflowDragThumbToBlueprint')}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(WORKFLOW_DRAG_INPUT_IMAGE_INDEX, String(idx + 1))
+                      e.dataTransfer.effectAllowed = 'copy'
+                    }}
+                    style={{
+                      position: 'relative',
+                      width: 104,
+                      height: 104,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      border: '1px solid var(--ant-color-border-secondary)',
+                      background: 'var(--ant-color-fill-quaternary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'grab',
+                    }}
+                  >
+                    <img
+                      src={item.thumbUrl}
+                      alt=""
+                      draggable={false}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        width: 'auto',
+                        height: 'auto',
+                        objectFit: 'contain',
+                        display: 'block',
+                      }}
+                    />
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      aria-label={t('roninProWorkflowAddThumbToBlueprint')}
+                      title={t('roninProWorkflowAddThumbToBlueprint')}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        addInputImageAt(idx + 1)
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: 2,
+                        bottom: 2,
+                        minWidth: 26,
+                        width: 26,
+                        height: 26,
+                        padding: 0,
+                        borderRadius: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 6 }}>
+                    {idx + 1}
+                  </Text>
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    aria-label={t('stashRemove')}
+                    onClick={() => removeWorkflowInputFile(item.id)}
+                    style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -6,
+                      minWidth: 28,
+                      width: 28,
+                      height: 28,
+                      padding: 0,
+                      borderRadius: '50%',
+                      background: 'var(--ant-color-bg-container)',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </StashDropZone>
       </div>
 
       <Button type="primary" loading={running} onClick={handleRunAll} block>
-        {t('roninProWorkflowRunAll')}
+        {t(
+          graphNodes.some((n) => n.type === 'workflowInputImage')
+            ? 'roninProWorkflowRunTargeted'
+            : 'roninProWorkflowRunAll'
+        )}
       </Button>
 
       {results.length > 0 && (
@@ -914,17 +1262,58 @@ export default function RoninProCustomWorkflow() {
             {results.map((r) => (
               <Col xs={24} sm={12} key={r.url}>
                 <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 8 }}>
-                  <img
-                    src={r.url}
-                    alt=""
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: 200,
-                      objectFit: 'contain',
-                      display: 'block',
-                      margin: '0 auto',
-                    }}
-                  />
+                  {onSendToFineProcess ? (
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: 'fine',
+                            label: t('roninProWorkflowSendToFine'),
+                            onClick: () => {
+                              void (async () => {
+                                try {
+                                  const res = await fetch(r.url)
+                                  const blob = await res.blob()
+                                  const base = r.name.replace(/\.[^.]+$/, '') || `workflow_${Date.now()}`
+                                  const name = /\.(png|jpe?g|webp)$/i.test(r.name) ? r.name : `${base}.png`
+                                  onSendToFineProcess(blob, name)
+                                  message.success(t('imgSendToFineProcessDone'))
+                                } catch {
+                                  message.error(t('roninProWorkflowFailed'))
+                                }
+                              })()
+                            },
+                          },
+                        ],
+                      }}
+                      trigger={['contextMenu']}
+                    >
+                      <img
+                        src={r.url}
+                        alt=""
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: 200,
+                          objectFit: 'contain',
+                          display: 'block',
+                          margin: '0 auto',
+                          cursor: 'context-menu',
+                        }}
+                      />
+                    </Dropdown>
+                  ) : (
+                    <img
+                      src={r.url}
+                      alt=""
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
+                        objectFit: 'contain',
+                        display: 'block',
+                        margin: '0 auto',
+                      }}
+                    />
+                  )}
                   <Button
                     type="link"
                     block

@@ -1,4 +1,5 @@
 /** 工具函数：帧处理、画布、抠图等 */
+import { resizeImageToBlobCanvasLegacy } from './utilsResizeCanvasLegacy'
 
 /** 裁切图片：按 left/top/right/bottom 裁掉边缘 */
 export async function cropImageBlob(
@@ -31,13 +32,30 @@ export async function cropImageBlob(
   })
 }
 
-/** 单图缩放：按比例缩放至目标尺寸内，居中放置。pixelated=true 时使用最近邻（硬边缘），适合像素图 */
+/** 单图缩放：按比例缩放至目标尺寸内，居中放置。pixelated=true 时使用 PS 风格最近邻（硬边缘）；false 时平滑缩放 */
 export async function resizeImageToBlob(
   blob: Blob,
   targetW: number,
   targetH: number,
   keepAspect = true,
   pixelated = false
+): Promise<Blob> {
+  if (pixelated) {
+    return resizeImageToBlobNearestNeighborPS(blob, targetW, targetH, keepAspect)
+  }
+  return resizeImageToBlobCanvasLegacy(blob, targetW, targetH, keepAspect, false)
+}
+
+/**
+ * PS 风格硬缩放：逐像素最近邻采样，模仿 Photoshop「邻近（硬边缘）」重采样。
+ * Canvas drawImage + imageSmoothingEnabled=false 在 1024→192 等非整数倍缩小时会模糊，
+ * 本函数使用 ImageData 手动采样，保证边缘锐利。
+ */
+export async function resizeImageToBlobNearestNeighborPS(
+  blob: Blob,
+  targetW: number,
+  targetH: number,
+  keepAspect: boolean
 ): Promise<Blob> {
   const img = await (typeof createImageBitmap === 'function'
     ? createImageBitmap(blob)
@@ -48,32 +66,62 @@ export async function resizeImageToBlob(
         im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('ERR_IMAGE_LOAD')) }
         im.src = url
       }))
-  const canvas = document.createElement('canvas')
-  canvas.width = targetW
-  canvas.height = targetH
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return blob
-  if (pixelated) {
-    ctx.imageSmoothingEnabled = false
-    ctx.imageSmoothingQuality = 'low'
-  }
-  let w: number, h: number, x: number, y: number
+  const srcW = img.width
+  const srcH = img.height
+  const tmp = document.createElement('canvas')
+  tmp.width = srcW
+  tmp.height = srcH
+  const tmpCtx = tmp.getContext('2d')
+  if (!tmpCtx) return blob
+  tmpCtx.drawImage(img, 0, 0)
+  const srcData = tmpCtx.getImageData(0, 0, srcW, srcH).data
+
+  let cw: number, ch: number, cx: number, cy: number
   if (keepAspect) {
-    const scale = Math.min(targetW / img.width, targetH / img.height)
-    w = Math.round(img.width * scale)
-    h = Math.round(img.height * scale)
-    x = (targetW - w) / 2
-    y = (targetH - h) / 2
+    const scale = Math.min(targetW / srcW, targetH / srcH)
+    cw = Math.max(1, Math.round(srcW * scale))
+    ch = Math.max(1, Math.round(srcH * scale))
+    cx = Math.round((targetW - cw) / 2)
+    cy = Math.round((targetH - ch) / 2)
   } else {
-    w = targetW
-    h = targetH
-    x = 0
-    y = 0
+    cw = targetW
+    ch = targetH
+    cx = 0
+    cy = 0
   }
-  ctx.clearRect(0, 0, targetW, targetH)
-  ctx.drawImage(img, x, y, w, h)
+
+  const out = document.createElement('canvas')
+  out.width = targetW
+  out.height = targetH
+  const outCtx = out.getContext('2d')
+  if (!outCtx) return blob
+  const outImg = outCtx.createImageData(targetW, targetH)
+  const dst = outImg.data
+
+  for (let dy = 0; dy < targetH; dy++) {
+    for (let dx = 0; dx < targetW; dx++) {
+      const dstIdx = (dy * targetW + dx) * 4
+      if (dx < cx || dx >= cx + cw || dy < cy || dy >= cy + ch) {
+        dst[dstIdx] = 0
+        dst[dstIdx + 1] = 0
+        dst[dstIdx + 2] = 0
+        dst[dstIdx + 3] = 0
+        continue
+      }
+      const rx = dx - cx
+      const ry = dy - cy
+      const sx = Math.min(srcW - 1, Math.max(0, Math.floor((rx + 0.5) * srcW / cw)))
+      const sy = Math.min(srcH - 1, Math.max(0, Math.floor((ry + 0.5) * srcH / ch)))
+      const srcIdx = (sy * srcW + sx) * 4
+      dst[dstIdx] = srcData[srcIdx]
+      dst[dstIdx + 1] = srcData[srcIdx + 1]
+      dst[dstIdx + 2] = srcData[srcIdx + 2]
+      dst[dstIdx + 3] = srcData[srcIdx + 3]
+    }
+  }
+  outCtx.putImageData(outImg, 0, 0)
   return new Promise((resolve, reject) => {
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)
+    out.toBlob((b) => (b ? resolve(b) : reject(new Error('ERR_TOBLOB'))), 'image/png', 0.95)
   })
 }
 

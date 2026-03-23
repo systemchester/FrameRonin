@@ -41,6 +41,9 @@ Thumbs.db
 *.log
 logs/
 
+# 本机工作区（不推送）
+frontend/src/localWorkspace/
+
 # 临时提取的 base64（已嵌入代码）
 frontend/scripts/bg*.txt
 
