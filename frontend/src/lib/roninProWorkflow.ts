@@ -12,6 +12,7 @@ import {
 import { removeGeminiWatermarkFromBlob } from './geminiWatermark'
 import {
   wfEvenSplitStrip,
+  wfEvenSplitPerCellEdge,
   wfGridCopyCol,
   wfGridCopyRow,
   wfGridDeleteCol,
@@ -49,6 +50,8 @@ export type WorkflowNodeType =
   | 'alphaFrontierErode'
   | 'padExpand'
   | 'evenSplitStrip'
+  /** 与平分取样相同的 cols×rows 划分，对每个格子统一扩边或裁边后再拼回整图 */
+  | 'evenSplitPerCellEdge'
   | 'mergeStrip'
   /** 简易上下拼接：可多路输入连到同一输入点，自上而下拼接（与 GIF 工具简易拼接一致） */
   | 'simpleStitchVertical'
@@ -89,7 +92,7 @@ export interface WorkflowEdge {
 /** 画布上的节点（含坐标） */
 export type GraphNode = WorkflowNode & { x: number; y: number }
 
-export const RONIN_PRO_WORKFLOW_GRAPH_VERSION = 5
+export const RONIN_PRO_WORKFLOW_GRAPH_VERSION = 6
 
 /** 从批量列表拖入蓝图时的 dataTransfer type，值为 1-based 序号字符串 */
 export const WORKFLOW_DRAG_INPUT_IMAGE_INDEX = 'application/x-frameronin-workflow-input-image-index'
@@ -117,6 +120,18 @@ export const WORKFLOW_PALETTE: { type: WorkflowNodeType; defaultParams: Record<s
   { type: 'alphaFrontierErode', defaultParams: { erosion: 0 } },
   { type: 'padExpand', defaultParams: { padTop: 0, padRight: 0, padBottom: 0, padLeft: 0 } },
   { type: 'evenSplitStrip', defaultParams: { evenCols: 4, evenRows: 4 } },
+  {
+    type: 'evenSplitPerCellEdge',
+    defaultParams: {
+      evenCols: 4,
+      evenRows: 4,
+      cellEdgeMode: 0,
+      edgeL: 0,
+      edgeT: 0,
+      edgeR: 0,
+      edgeB: 0,
+    },
+  },
   { type: 'mergeStrip', defaultParams: { mergeCols: 4, frameCount: 16 } },
   { type: 'simpleStitchVertical', defaultParams: {} },
   {
@@ -356,6 +371,19 @@ async function runOneStep(blob: Blob, node: WorkflowNode): Promise<Blob> {
       )
     case 'evenSplitStrip':
       return wfEvenSplitStrip(blob, p.evenCols ?? 4, p.evenRows ?? 4)
+    case 'evenSplitPerCellEdge': {
+      const mode = (p.cellEdgeMode ?? 0) !== 0 ? 1 : 0
+      return wfEvenSplitPerCellEdge(
+        blob,
+        p.evenCols ?? 4,
+        p.evenRows ?? 4,
+        mode,
+        p.edgeL ?? 0,
+        p.edgeT ?? 0,
+        p.edgeR ?? 0,
+        p.edgeB ?? 0
+      )
+    }
     case 'mergeStrip':
       return wfMergeStrip(blob, p.mergeCols ?? 4, {
         frameCount: p.frameCount,
@@ -834,6 +862,7 @@ const VALID_TYPES = new Set<WorkflowNodeType>([
   'alphaFrontierErode',
   'padExpand',
   'evenSplitStrip',
+  'evenSplitPerCellEdge',
   'mergeStrip',
   'simpleStitchVertical',
   'gridDeleteRow',

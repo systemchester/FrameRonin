@@ -8,6 +8,7 @@ import {
   InputNumber,
   message,
   Row,
+  Select,
   Slider,
   Space,
   Typography,
@@ -31,6 +32,7 @@ import {
   type WorkflowEdge,
   type WorkflowNodeType,
 } from '../lib/roninProWorkflow'
+import { WORKFLOW_FINISHED_PRESETS } from '../lib/roninProWorkflowFinishedPresets'
 import StashDropZone from './StashDropZone'
 import WorkflowBlueprintCanvas, {
   BLUEPRINT_INPUT_IMAGE_NODE_WIDTH,
@@ -87,6 +89,7 @@ const NODE_LABEL_I18N: Record<WorkflowNodeType, string> = {
   alphaFrontierErode: 'roninProWorkflowNode_alphaFrontierErode',
   padExpand: 'roninProWorkflowNode_padExpand',
   evenSplitStrip: 'roninProWorkflowNode_evenSplitStrip',
+  evenSplitPerCellEdge: 'roninProWorkflowNode_evenSplitPerCellEdge',
   mergeStrip: 'roninProWorkflowNode_mergeStrip',
   simpleStitchVertical: 'roninProWorkflowNode_simpleStitchVertical',
   gridDeleteRow: 'roninProWorkflowNode_gridDeleteRow',
@@ -142,6 +145,7 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
   const [running, setRunning] = useState(false)
   /** 导出预设名：写入 JSON 的 presetName，并用于下载文件名 */
   const [presetName, setPresetName] = useState('')
+  const [finishedPresetsOpen, setFinishedPresetsOpen] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -418,6 +422,23 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
       setGraphNodes(nodes)
       setGraphEdges(edges)
       setPresetName(loadedName ?? '')
+      message.success(t('roninProWorkflowLoadSuccess'))
+    } catch {
+      message.error(t('roninProWorkflowLoadFailed'))
+    }
+  }
+
+  const applyFinishedPresetJson = (json: string) => {
+    try {
+      const { nodes, edges, presetName: loadedName } = parseWorkflowGraph(json)
+      setGraphNodes(nodes)
+      setGraphEdges(edges)
+      setPresetName(loadedName ?? '')
+      try {
+        localStorage.setItem(STORAGE_KEY, json)
+      } catch {
+        /* ignore */
+      }
       message.success(t('roninProWorkflowLoadSuccess'))
     } catch {
       message.error(t('roninProWorkflowLoadFailed'))
@@ -724,6 +745,67 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
                   onChange={(v) => updateNodeParam(id, 'evenRows', wfClampInt(v, 1, 32, 4))}
                 />
               </div>
+            </Space>
+          )
+        case 'evenSplitPerCellEdge':
+          return (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Text style={{ color: '#8b93a5', fontSize: 11 }}>{t('roninProWorkflowEvenSplitPerCellEdgeHint')}</Text>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowEvenCols')}</Text>
+                <InputNumber
+                  min={1}
+                  max={32}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.evenCols ?? 4)}
+                  onChange={(v) => updateNodeParam(id, 'evenCols', wfClampInt(v, 1, 32, 4))}
+                />
+              </div>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowEvenRows')}</Text>
+                <InputNumber
+                  min={1}
+                  max={32}
+                  size="small"
+                  style={INPUT_FULL}
+                  value={Math.round(p.evenRows ?? 4)}
+                  onChange={(v) => updateNodeParam(id, 'evenRows', wfClampInt(v, 1, 32, 4))}
+                />
+              </div>
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowCellEdgeMode')}</Text>
+                <Select
+                  size="small"
+                  style={INPUT_FULL}
+                  value={(p.cellEdgeMode ?? 0) !== 0 ? 1 : 0}
+                  options={[
+                    { value: 0, label: t('roninProWorkflowCellEdgeModePad') },
+                    { value: 1, label: t('roninProWorkflowCellEdgeModeCrop') },
+                  ]}
+                  onChange={(v) => updateNodeParam(id, 'cellEdgeMode', v === 1 ? 1 : 0)}
+                />
+              </div>
+              {(
+                [
+                  ['edgeL', 'roninProWorkflowCellEdgeL'],
+                  ['edgeT', 'roninProWorkflowCellEdgeT'],
+                  ['edgeR', 'roninProWorkflowCellEdgeR'],
+                  ['edgeB', 'roninProWorkflowCellEdgeB'],
+                ] as const
+              ).map(([key, tk]) => (
+                <div key={key}>
+                  <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t(tk)}</Text>
+                  <InputNumber
+                    min={0}
+                    max={512}
+                    size="small"
+                    style={INPUT_FULL}
+                    value={Math.round(p[key] ?? 0)}
+                    onChange={(v) => updateNodeParam(id, key, wfClampInt(v, 0, 512, 0))}
+                  />
+                </div>
+              ))}
             </Space>
           )
         case 'mergeStrip':
@@ -1135,7 +1217,22 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
             onChange={onPickJsonFile}
           />
           <Button onClick={loadJsonFromStorage}>{t('roninProWorkflowLoadLast')}</Button>
+          <Button
+            type={finishedPresetsOpen ? 'primary' : 'default'}
+            onClick={() => setFinishedPresetsOpen((o) => !o)}
+          >
+            {t('roninProWorkflowLoadFinishedPresets')}
+          </Button>
         </Space>
+        {finishedPresetsOpen && (
+          <Space wrap style={{ marginTop: 8 }}>
+            {WORKFLOW_FINISHED_PRESETS.map((p) => (
+              <Button key={p.id} onClick={() => applyFinishedPresetJson(p.json)}>
+                {t(p.labelKey)}
+              </Button>
+            ))}
+          </Space>
+        )}
       </div>
 
       <div>

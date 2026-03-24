@@ -1,5 +1,5 @@
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Space, Typography } from 'antd'
+import { CopyOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Button, InputNumber, Space, Typography } from 'antd'
 import { useEffect, useRef } from 'react'
 import { useLanguage } from '../../i18n/context'
 import { composeFrameToImageData } from './composeFrame'
@@ -58,23 +58,28 @@ export interface RsepriteTimelineProps {
   doc: Document
   activeFrameIndex: number
   onSelectFrame: (index: number) => void
-  onAddFrame: () => void
+  /** 深拷贝当前帧并插在其后（第 8 步） */
+  onDuplicateFrame: () => void
   onDeleteFrame: (frameIndex: number) => void
+  onFrameDurationChange: (frameIndex: number, durationMs: number) => void
 }
 
 /**
- * 第 7 步：帧条 — 缩略图、当前帧高亮、增删帧（至少 1 帧）
+ * 第 7～8 步：帧条 — 缩略图、当前帧、复制帧、延时占位、删帧
  */
 export default function RsepriteTimeline({
   doc,
   activeFrameIndex,
   onSelectFrame,
-  onAddFrame,
+  onDuplicateFrame,
   onDeleteFrame,
+  onFrameDurationChange,
 }: RsepriteTimelineProps) {
   const { t } = useLanguage()
   const n = doc.frames.length
   const canDelete = n > 1
+  const activeFrame = doc.frames[activeFrameIndex]
+  const durationMs = activeFrame?.durationMs ?? 100
 
   return (
     <div
@@ -87,9 +92,36 @@ export default function RsepriteTimeline({
       <Typography.Text strong style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
         {t('roninProRsepriteTimelineTitle')}
       </Typography.Text>
+      <Space wrap align="center" style={{ marginBottom: 10 }}>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('roninProRsepriteFrameDurationLabel')}
+        </Typography.Text>
+        <Space size={4}>
+          <InputNumber
+            size="small"
+            min={1}
+            max={60_000}
+            step={10}
+            value={durationMs}
+            onChange={(v) => {
+              if (v != null && Number.isFinite(v)) {
+                onFrameDurationChange(activeFrameIndex, v)
+              }
+            }}
+            style={{ width: 100 }}
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            ms
+          </Typography.Text>
+        </Space>
+        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+          {t('roninProRsepriteFrameDurationHint')}
+        </Typography.Text>
+      </Space>
       <Space wrap align="start" size={8}>
         {doc.frames.map((fr, i) => {
           const active = i === activeFrameIndex
+          const d = fr.durationMs ?? 100
           return (
             <button
               key={fr.id}
@@ -115,12 +147,18 @@ export default function RsepriteTimeline({
               >
                 {i + 1}
               </Typography.Text>
+              <Typography.Text
+                type="secondary"
+                style={{ display: 'block', textAlign: 'center', fontSize: 10, marginTop: 0 }}
+              >
+                {d} ms
+              </Typography.Text>
             </button>
           )
         })}
         <Space direction="vertical" size={4} style={{ marginLeft: 4 }}>
-          <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={onAddFrame}>
-            {t('roninProRsepriteTimelineAdd')}
+          <Button type="dashed" size="small" icon={<CopyOutlined />} onClick={onDuplicateFrame}>
+            {t('roninProRsepriteTimelineDuplicate')}
           </Button>
           <Button
             danger

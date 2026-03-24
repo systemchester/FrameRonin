@@ -62,6 +62,10 @@ export interface EditorCanvasProps {
   /** 一笔结束（pointerup）时回调整笔像素，用于单次撤销 */
   onPaintPixels?: (pixels: PixelPoint[], rgba: Rgba) => void
   paintRgba?: Rgba
+  /** 第 9 步：前后帧半透明显示（仅预览） */
+  onionSkinEnabled?: boolean
+  /** 0～1，相邻帧合成后再乘以此系数 */
+  onionSkinOpacity?: number
 }
 
 export default function EditorCanvas({
@@ -73,10 +77,14 @@ export default function EditorCanvas({
   minHeight = 320,
   onPaintPixels,
   paintRgba = DEFAULT_PAINT_RGBA,
+  onionSkinEnabled = false,
+  onionSkinOpacity = 0.35,
 }: EditorCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
+  /** 洋葱皮 / 合成：putImageData 后 drawImage 以应用 globalAlpha */
+  const onionScratchRef = useRef<HTMLCanvasElement | null>(null)
 
   const [scale, setScale] = useState(8)
   const [viewOx, setViewOx] = useState(0)
@@ -220,11 +228,57 @@ export default function EditorCanvas({
       buf.height = ih
     }
     const bctx = buf.getContext('2d')
-    if (bctx) bctx.putImageData(composite, 0, 0)
+    if (!bctx) return
+    bctx.clearRect(0, 0, iw, ih)
+    bctx.imageSmoothingEnabled = false
+
+    let scratch = onionScratchRef.current
+    if (!scratch) {
+      scratch = document.createElement('canvas')
+      onionScratchRef.current = scratch
+    }
+    scratch.width = iw
+    scratch.height = ih
+    const sctx = scratch.getContext('2d')
+    if (!sctx) return
+    sctx.imageSmoothingEnabled = false
+
+    const onion = onionSkinEnabled && doc.frames.length > 1
+    const oa = clamp(onionSkinOpacity, 0, 1)
+    if (onion && oa > 0) {
+      if (frameIndex > 0) {
+        sctx.clearRect(0, 0, iw, ih)
+        sctx.putImageData(composeFrameToImageData(doc, frameIndex - 1), 0, 0)
+        bctx.globalAlpha = oa
+        bctx.drawImage(scratch, 0, 0)
+      }
+      if (frameIndex < doc.frames.length - 1) {
+        sctx.clearRect(0, 0, iw, ih)
+        sctx.putImageData(composeFrameToImageData(doc, frameIndex + 1), 0, 0)
+        bctx.globalAlpha = oa
+        bctx.drawImage(scratch, 0, 0)
+      }
+      bctx.globalAlpha = 1
+    }
+
+    sctx.clearRect(0, 0, iw, ih)
+    sctx.putImageData(composite, 0, 0)
+    bctx.drawImage(scratch, 0, 0)
 
     ctx.imageSmoothingEnabled = false
     ctx.drawImage(buf, sx, sy, sw, sh)
-  }, [doc, frameIndex, activeLayerIndex, iw, ih, scale, viewOx, viewOy])
+  }, [
+    doc,
+    frameIndex,
+    activeLayerIndex,
+    iw,
+    ih,
+    scale,
+    viewOx,
+    viewOy,
+    onionSkinEnabled,
+    onionSkinOpacity,
+  ])
 
   const paintFnRef = useRef(paint)
   useLayoutEffect(() => {

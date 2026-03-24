@@ -182,18 +182,25 @@
 
 ---
 
-### 第 8 步：帧操作细化
+### 第 8 步：帧操作细化 ✅（已实现）
 
 **目标**：复制帧、排序（拖放可放到 Phase C 后）。
 
 **任务**
 
 - 「复制当前帧」：深拷贝所有层 cel。
-- （可选）帧延时字段 `durationCs` 仅占位，UI 显示默认 100ms。
+- （可选）帧延时字段 `durationMs` 占位，UI 默认 100ms，可编辑当前帧。
+
+**已实现**
+
+- `types.ts`：`Frame.durationMs`
+- `documentFactory.ts`：`duplicateFrameDeep` 拷贝延时；初始帧 `durationMs: 100`
+- `useRsepriteState.ts`：`SET_FRAME_DURATION`、`setFrameDuration`
+- `RsepriteTimeline.tsx`：「复制当前帧」按钮、缩略图下显示延时、当前帧延时 `InputNumber`
 
 **验收**
 
-- [ ] 复制后两帧视觉一致；改后帧不影响前帧副本（除非链式引用错误）。
+- [x] 复制后两帧视觉一致；改后帧不影响前帧副本（`ImageData` 深拷贝）。
 
 > **阶段 B 完成** = 多帧多层的非动画导出前「编辑闭环」。
 
@@ -201,7 +208,7 @@
 
 ## 阶段 C — 动画体验与导出
 
-### 第 9 步：洋葱皮
+### 第 9 步：洋葱皮 ✅（已实现）
 
 **目标**：编辑当前帧时，前后帧半透明显示（只预览，不写像素）。
 
@@ -210,9 +217,14 @@
 - 在合成阶段先以低 alpha 画 `frameIndex±1` 的合成图，再画当前帧。
 - UI：开关 + 透明度滑条。
 
+**已实现**
+
+- `EditorCanvas.tsx`：`onionSkinEnabled` / `onionSkinOpacity`；离屏 scratch + `drawImage` 应用 alpha；先邻帧后当前帧（含笔划预览路径）。
+- `RoninProRseprite.tsx`：撤销行内 Checkbox + Slider（5～100%）；单帧时自动禁用。
+
 **验收**
 
-- [ ] 首末帧不越界；关洋葱皮后只剩当前帧。
+- [x] 首末帧不越界；关洋葱皮后只剩当前帧。
 
 ---
 

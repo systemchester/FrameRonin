@@ -38,6 +38,7 @@ export type RsepriteAction =
   | { type: 'DELETE_FRAME'; frameIndex: number }
   | { type: 'SET_LAYER_VISIBLE'; layerIndex: number; visible: boolean }
   | { type: 'SET_LAYER_LOCKED'; layerIndex: number; locked: boolean }
+  | { type: 'SET_FRAME_DURATION'; frameIndex: number; durationMs: number }
   | { type: 'NOOP' }
 
 function updateLayerInDoc(
@@ -140,6 +141,16 @@ function rsepriteReducer(
       })
       if (doc === state.document) return state
       return { ...state, document: doc }
+    }
+    case 'SET_FRAME_DURATION': {
+      const { frameIndex, durationMs } = action
+      const doc = state.document
+      if (frameIndex < 0 || frameIndex >= doc.frames.length) return state
+      const ms = Math.max(1, Math.min(60_000, Math.round(durationMs)))
+      const frames = doc.frames.map((f, i) =>
+        i === frameIndex ? { ...f, durationMs: ms } : f,
+      )
+      return { ...state, document: { ...doc, frames } }
     }
     case 'PAINT_PIXELS': {
       const doc = state.document
@@ -246,6 +257,7 @@ export interface UseRsepriteStateResult {
   setActiveFrame: (index: number) => void
   addFrame: () => void
   deleteFrame: (frameIndex: number) => void
+  setFrameDuration: (frameIndex: number, durationMs: number) => void
   setLayerVisible: (layerIndex: number, visible: boolean) => void
   setLayerLocked: (layerIndex: number, locked: boolean) => void
   undo: () => void
@@ -288,6 +300,10 @@ export function useRsepriteState(
     dispatch({ type: 'DELETE_FRAME', frameIndex })
   }, [])
 
+  const setFrameDuration = useCallback((frameIndex: number, durationMs: number) => {
+    dispatch({ type: 'SET_FRAME_DURATION', frameIndex, durationMs })
+  }, [])
+
   const setLayerVisible = useCallback(
     (layerIndex: number, visible: boolean) => {
       dispatch({ type: 'SET_LAYER_VISIBLE', layerIndex, visible })
@@ -320,6 +336,7 @@ export function useRsepriteState(
     setActiveFrame,
     addFrame,
     deleteFrame,
+    setFrameDuration,
     setLayerVisible,
     setLayerLocked,
     undo,

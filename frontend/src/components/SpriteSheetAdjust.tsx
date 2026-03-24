@@ -1,5 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
-import { Checkbox, ColorPicker, InputNumber, Progress, Segmented, Slider, Space, Typography, Upload } from 'antd'
+import { Button, Checkbox, ColorPicker, InputNumber, message, Progress, Segmented, Slider, Space, Typography, Upload } from 'antd'
+// @ts-expect-error gifenc has no types
+import { GIFEncoder, quantize, applyPalette } from 'gifenc'
 import { ArrowDownOutlined, ArrowLeftOutlined, ArrowRightOutlined, ArrowUpOutlined, MinusOutlined, PlusOutlined, StepBackwardOutlined, StepForwardOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd'
 import { useLanguage } from '../i18n/context'
@@ -153,6 +155,15 @@ async function recombineFrames(
   })
 }
 
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('load'))
+    img.src = src
+  })
+}
+
 export default function SpriteSheetAdjust() {
   const { t } = useLanguage()
   const [file, setFile] = useState<File | null>(null)
@@ -176,6 +187,7 @@ export default function SpriteSheetAdjust() {
   const [fixedPixelFixes, setFixedPixelFixes] = useState<FixedPixelFix[]>([])
   const [mouseInPreview, setMouseInPreview] = useState(false)
   const [previewMousePos, setPreviewMousePos] = useState<{ x: number; y: number } | null>(null)
+  const [gifExporting, setGifExporting] = useState(false)
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const previewContainerRef = useRef<HTMLDivElement | null>(null)
 
@@ -367,6 +379,104 @@ export default function SpriteSheetAdjust() {
   const displayIdx = selectedIndices.length > 0 ? selectedIndices[currentIdx % selectedIndices.length] ?? 0 : 0
   const displayUrl = frameUrls[displayIdx]
   const speed = Math.max(50, frameDelay / speedScale)
+
+  const handleExportGif = useCallback(async () => {
+    const indices = frameUrls.map((_, i) => i).filter((i) => selected[i])
+    if (indices.length === 0) {
+      message.warning(t('spriteAdjustExportGifNoFrames'))
+      return
+    }
+    setGifExporting(true)
+    try {
+      const delayMs = Math.round(Math.max(50, frameDelay / speedScale))
+      const frameImgs: ImageData[] = []
+      for (const idx of indices) {
+        const img = await loadImageElement(frameUrls[idx]!)
+        const w = img.naturalWidth
+        const h = img.naturalHeight
+        const dx = frameOffsets[idx]?.dx ?? 0
+        const dy = frameOffsets[idx]?.dy ?? 0
+        const c = document.createElement('canvas')
+        c.width = w
+        c.height = h
+        const ctx = c.getContext('2d')!
+        ctx.clearRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h, dx, dy, w, h)
+        frameImgs.push(ctx.getImageData(0, 0, w, h))
+      }
+
+      const maxW = Math.max(...frameImgs.map((m) => m.width))
+      const maxH = Math.max(...frameImgs.map((m) => m.height))
+      const normalizeToMax = (im: ImageData): ImageData => {
+        if (im.width === maxW && im.height === maxH) return im
+        const out = new ImageData(maxW, maxH)
+        out.data.fill(0)
+        for (let y = 0; y < im.height; y++) {
+          for (let x = 0; x < im.width; x++) {
+            const src = (y * im.width + x) * 4
+            const dst = (y * maxW + x) * 4
+            out.data[dst] = im.data[src]!
+            out.data[dst + 1] = im.data[src + 1]!
+            out.data[dst + 2] = im.data[src + 2]!
+            out.data[dst + 3] = im.data[src + 3]!
+          }
+        }
+        return out
+      }
+
+      const gif = GIFEncoder()
+      for (let i = 0; i < frameImgs.length; i++) {
+        const { data } = normalizeToMax(frameImgs[i]!)
+        const palette = quantize(data, 255, {
+          format: 'rgba4444',
+          oneBitAlpha: 128,
+          clearAlpha: true,
+          clearAlphaThreshold: 128,
+        })
+        const index = applyPalette(data, palette, 'rgba4444')
+        const transIdx = palette.findIndex((c: number[]) => c[3] === 0)
+        let finalPalette: number[][]
+        let finalIndex: Uint8Array
+        let transparentIndex: number
+        if (transIdx >= 0) {
+          finalPalette = [...palette]
+          finalIndex = index
+          transparentIndex = transIdx
+        } else {
+          finalPalette = [[0, 0, 0, 0], ...palette]
+          finalIndex = new Uint8Array(index.length)
+          for (let j = 0; j < data.length; j += 4) {
+            if (data[j + 3]! < 128) {
+              finalIndex[j / 4] = 0
+            } else {
+              finalIndex[j / 4] = index[j / 4]! + 1
+            }
+          }
+          transparentIndex = 0
+        }
+        gif.writeFrame(finalIndex, maxW, maxH, {
+          palette: finalPalette,
+          delay: delayMs,
+          transparent: true,
+          transparentIndex,
+        })
+      }
+      gif.finish()
+      const blob = new Blob([gif.bytes()], { type: 'image/gif' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const base = file?.name?.replace(/\.[^.]+$/, '') ?? 'sprite_adjust'
+      a.download = `${base}_frames.gif`
+      a.click()
+      URL.revokeObjectURL(url)
+      message.success(t('gifEncodeSuccess'))
+    } catch (e) {
+      message.error(t('gifEncodeFailed') + ': ' + String(e))
+    } finally {
+      setGifExporting(false)
+    }
+  }, [frameUrls, selected, frameOffsets, frameDelay, speedScale, file?.name, t])
 
   /** 避免勾选变化后 displayIdx 未变导致键盘回调闭包过期 */
   const selMin = selectedIndices.length > 0 ? Math.min(...selectedIndices) : 0
@@ -996,6 +1106,15 @@ export default function SpriteSheetAdjust() {
                     </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 140 }}>
+                      <Button
+                        type="primary"
+                        loading={gifExporting}
+                        disabled={selectedIndices.length === 0}
+                        onClick={handleExportGif}
+                        block
+                      >
+                        {t('spriteAdjustExportGif')}
+                      </Button>
                       {!fixedPixelMode ? (
                         <button
                           type="button"

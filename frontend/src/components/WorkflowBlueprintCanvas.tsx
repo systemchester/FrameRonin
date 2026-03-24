@@ -290,18 +290,27 @@ export default function WorkflowBlueprintCanvas({
   }, [])
 
   useEffect(() => {
+    const isTypingTarget = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null
+      if (!t) return false
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return true
+      if (t.isContentEditable) return true
+      return !!t.closest?.('input, textarea, select, [contenteditable="true"]')
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedEdgeId) {
-          setEdges((prev) => prev.filter((x) => x.id !== selectedEdgeId))
-          setSelectedEdgeId(null)
-          return
-        }
-        if (selectedId) {
-          setNodes((prev) => prev.filter((n) => n.id !== selectedId))
-          setEdges((prev) => prev.filter((ed) => ed.source !== selectedId && ed.target !== selectedId))
-          setSelectedId(null)
-        }
+      // 输入框内不删节点；Backspace 不用于删除（避免误触），仅 Delete 删除选中连线/节点
+      if (e.key !== 'Delete') return
+      if (isTypingTarget(e.target)) return
+      if (e.repeat) return
+      if (selectedEdgeId) {
+        setEdges((prev) => prev.filter((x) => x.id !== selectedEdgeId))
+        setSelectedEdgeId(null)
+        return
+      }
+      if (selectedId) {
+        setNodes((prev) => prev.filter((n) => n.id !== selectedId))
+        setEdges((prev) => prev.filter((ed) => ed.source !== selectedId && ed.target !== selectedId))
+        setSelectedId(null)
       }
     }
     window.addEventListener('keydown', onKey)

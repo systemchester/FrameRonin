@@ -3,6 +3,7 @@ import { Button, Card, Col, Row, Typography } from 'antd'
 import {
   AppstoreOutlined,
   ArrowLeftOutlined,
+  ClusterOutlined,
   ExperimentOutlined,
   ExpandOutlined,
   ForkOutlined,
@@ -22,6 +23,7 @@ import RoninProAdvancedPixel from './RoninProAdvancedPixel'
 import RoninProCustomWorkflow from './RoninProCustomWorkflow'
 import RoninProNftClaim from './RoninProNftClaim'
 import RoninProRseprite from './RoninProRseprite'
+import RoninProDuplicateFrames from './RoninProDuplicateFrames'
 
 const ACCENT = '#b55233'
 const ICON_BOX = 44
@@ -44,6 +46,12 @@ const RONIN_FEATURE_ENTRIES = [
     Icon: MergeCellsOutlined,
     titleKey: 'roninProUnifySize',
     descKey: 'roninProUnifySizeHint',
+  },
+  {
+    id: 'duplicateFrames' as const,
+    Icon: ClusterOutlined,
+    titleKey: 'roninProDupFrames',
+    descKey: 'roninProDupFramesCardDesc',
   },
   {
     id: 'customWorkflow' as const,
@@ -297,6 +305,8 @@ export default function RoninPro({
         <RoninProCustomScale />
       ) : activeFeature === 'unifySize' ? (
         <RoninProUnifySize />
+      ) : activeFeature === 'duplicateFrames' ? (
+        <RoninProDuplicateFrames />
       ) : activeFeature === 'customWorkflow' ? (
         <RoninProCustomWorkflow onSendToFineProcess={onSendToFineProcess} />
       ) : activeFeature === 'advancedPixel' ? (

@@ -14,12 +14,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sky-mavis/tanto-connect": "^0.0.22",
     "@ant-design/icons": "^6.1.0",
+    "@sky-mavis/tanto-connect": "^0.0.22",
+    "@techstark/opencv-js": "^4.12.0-release.1",
     "antd": "^6.3.1",
     "axios": "^1.13.5",
     "gifenc": "^1.0.3",
     "gifuct-js": "^2.1.2",
+    "image-q": "^4.0.0",
     "jszip": "^3.10.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

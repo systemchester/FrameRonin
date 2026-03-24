@@ -3,6 +3,8 @@
  * 网格类：单格宽高由「当前图尺寸 ÷ 列数/行数」自动推算；行列索引在业务层用 1 起始传入。
  */
 
+import { cropImageBlob } from '../components/ParamsStep/utils'
+
 async function blobToImage(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob)
@@ -88,6 +90,90 @@ export async function wfEvenSplitStrip(blob: Blob, cols: number, rows: number): 
       const sy = row * ah
       ctx.drawImage(img, sx, sy, aw, ah, x, 0, aw, ah)
       x += aw
+    }
+  }
+  return canvasToPngBlob(out)
+}
+
+/**
+ * 按 cols×rows 与「平分裁切（横条）」相同的取样划分整图，对每个格子分别扩透明边或向内裁边，再拼回完整网格图。
+ * cellEdgeMode: 0=扩边 pad，1=裁边 crop；四向像素数 0–512。
+ */
+export async function wfEvenSplitPerCellEdge(
+  blob: Blob,
+  cols: number,
+  rows: number,
+  cellEdgeMode: 0 | 1,
+  edgeL: number,
+  edgeT: number,
+  edgeR: number,
+  edgeB: number
+): Promise<Blob> {
+  const img = await blobToImage(blob)
+  const W = img.naturalWidth
+  const H = img.naturalHeight
+  const c = Math.max(1, Math.floor(cols))
+  const r = Math.max(1, Math.floor(rows))
+  const aw = Math.floor(W / c)
+  const ah = Math.floor(H / r)
+  if (aw < 1 || ah < 1) throw new Error('ERR_GRID_TOO_LARGE')
+
+  const l = Math.max(0, Math.round(edgeL))
+  const t = Math.max(0, Math.round(edgeT))
+  const rr = Math.max(0, Math.round(edgeR))
+  const b = Math.max(0, Math.round(edgeB))
+  const isPad = cellEdgeMode === 0
+
+  const cells: HTMLCanvasElement[] = []
+  for (let row = 0; row < r; row++) {
+    for (let col = 0; col < c; col++) {
+      const sx = col * aw
+      const sy = row * ah
+      const cell = document.createElement('canvas')
+      cell.width = aw
+      cell.height = ah
+      const cctx = cell.getContext('2d')
+      if (!cctx) throw new Error('ERR_CANVAS')
+      cctx.drawImage(img, sx, sy, aw, ah, 0, 0, aw, ah)
+      let cellBlob = await canvasToPngBlob(cell)
+      if (isPad) {
+        if (l + t + rr + b > 0) {
+          cellBlob = await wfPadExpand(cellBlob, t, rr, b, l)
+        }
+      } else {
+        if (l + t + rr + b > 0) {
+          cellBlob = await cropImageBlob(cellBlob, { left: l, top: t, right: rr, bottom: b })
+        }
+      }
+      const ci = await blobToImage(cellBlob)
+      const cc = document.createElement('canvas')
+      cc.width = ci.naturalWidth
+      cc.height = ci.naturalHeight
+      const xctx = cc.getContext('2d')
+      if (!xctx) throw new Error('ERR_CANVAS')
+      xctx.drawImage(ci, 0, 0)
+      cells.push(cc)
+    }
+  }
+
+  const nw = cells[0]!.width
+  const nh = cells[0]!.height
+  for (const cc of cells) {
+    if (cc.width !== nw || cc.height !== nh) {
+      throw new Error('ERR_CELL_SIZE_MISMATCH')
+    }
+  }
+
+  const out = document.createElement('canvas')
+  out.width = c * nw
+  out.height = r * nh
+  const ctx = out.getContext('2d')
+  if (!ctx) throw new Error('ERR_CANVAS')
+  let i = 0
+  for (let row = 0; row < r; row++) {
+    for (let col = 0; col < c; col++) {
+      const cc = cells[i++]!
+      ctx.drawImage(cc, col * nw, row * nh)
     }
   }
   return canvasToPngBlob(out)

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Space, Typography } from 'antd'
+import { Button, Card, Checkbox, Slider, Space, Typography } from 'antd'
 import {
   DEFAULT_PAINT_RGBA,
   EditorCanvas,
@@ -17,7 +17,7 @@ const DEFAULT_H = 64
 
 /**
  * RoninPro — Rseprite：Aseprite 类像素动画编辑
- * 第 1 步：文档；第 2～5 步：画布与历史；第 6 步：图层；第 7 步：多帧与帧条
+ * 第 1 步：文档；第 2～5 步：画布与历史；第 6 步：图层；第 7～9 步：多帧、复制帧、延时、洋葱皮
  */
 export default function RoninProRseprite() {
   const { t } = useLanguage()
@@ -31,6 +31,7 @@ export default function RoninProRseprite() {
     setActiveFrame,
     addFrame,
     deleteFrame,
+    setFrameDuration,
     setLayerVisible,
     setLayerLocked,
     undo,
@@ -40,6 +41,8 @@ export default function RoninProRseprite() {
   } = useRsepriteState(DEFAULT_W, DEFAULT_H)
 
   const [tool, setTool] = useState<RsepriteTool>('pencil')
+  const [onionSkinEnabled, setOnionSkinEnabled] = useState(false)
+  const [onionSkinOpacityPct, setOnionSkinOpacityPct] = useState(35)
   const [primaryColor, setPrimaryColor] = useState<Rgba>(DEFAULT_PAINT_RGBA)
   const [secondaryColor, setSecondaryColor] = useState<Rgba>([
     255, 255, 255, 255,
@@ -191,21 +194,43 @@ export default function RoninProRseprite() {
           onSecondaryChange={setSecondaryColor}
         />
         <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          <Space wrap>
+          <Space wrap align="center">
             <Button size="small" disabled={!canUndo} onClick={undo}>
               {t('roninProRsepriteUndo')}
             </Button>
             <Button size="small" disabled={!canRedo} onClick={redo}>
               {t('roninProRsepriteRedo')}
             </Button>
+            <Checkbox
+              checked={onionSkinEnabled}
+              onChange={(e) => setOnionSkinEnabled(e.target.checked)}
+              disabled={doc.frames.length < 2}
+            >
+              {t('roninProRsepriteOnionSkin')}
+            </Checkbox>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {t('roninProRsepriteOnionOpacity')}
+            </Typography.Text>
+            <Slider
+              min={5}
+              max={100}
+              value={onionSkinOpacityPct}
+              onChange={setOnionSkinOpacityPct}
+              disabled={!onionSkinEnabled || doc.frames.length < 2}
+              style={{ width: 120, margin: 0 }}
+            />
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {onionSkinOpacityPct}%
+            </Typography.Text>
           </Space>
         </div>
         <RsepriteTimeline
           doc={doc}
           activeFrameIndex={activeFrameIndex}
           onSelectFrame={setActiveFrame}
-          onAddFrame={addFrame}
+          onDuplicateFrame={addFrame}
           onDeleteFrame={deleteFrame}
+          onFrameDurationChange={setFrameDuration}
         />
         <RsepriteLayerPanel
           layers={doc.layers}
@@ -221,6 +246,8 @@ export default function RoninProRseprite() {
           minHeight={280}
           onPaintPixels={activeLayerLocked ? undefined : onPaintPixels}
           paintRgba={paintRgba}
+          onionSkinEnabled={onionSkinEnabled}
+          onionSkinOpacity={onionSkinOpacityPct / 100}
         />
         <Typography.Paragraph
           type="secondary"
@@ -254,9 +281,21 @@ export default function RoninProRseprite() {
         </Typography.Paragraph>
         <Typography.Paragraph
           type="secondary"
-          style={{ margin: '0 12px 12px', fontSize: 12 }}
+          style={{ margin: '0 12px 4px', fontSize: 12 }}
         >
           {t('roninProRsepriteStep7Hint')}
+        </Typography.Paragraph>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ margin: '0 12px 4px', fontSize: 12 }}
+        >
+          {t('roninProRsepriteStep8Hint')}
+        </Typography.Paragraph>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ margin: '0 12px 12px', fontSize: 12 }}
+        >
+          {t('roninProRsepriteStep9Hint')}
         </Typography.Paragraph>
       </Card>
 

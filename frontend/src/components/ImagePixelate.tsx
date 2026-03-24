@@ -204,12 +204,17 @@ function pixelateImage(img: HTMLImageElement, pixelSize: number): Promise<Blob> 
 
 export default function ImagePixelate() {
   const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState<'pixelate' | 'color16'>('pixelate')
+  const [activeTab, setActiveTab] = useState<'pixelate' | 'color16' | 'advanced'>('pixelate')
   const [color16Method, setColor16Method] = useState<'rgb' | 'lab'>('lab')
   const [color16Dither, setColor16Dither] = useState(true)
   const [file, setFile] = useState<File | null>(null)
   const [originalUrl, setOriginalUrl] = useState<string | null>(null)
   const [pixelSize, setPixelSize] = useState(8)
+  const [advUpscale, setAdvUpscale] = useState(5)
+  const [advColors, setAdvColors] = useState(32)
+  const [advScaleResult, setAdvScaleResult] = useState(1)
+  const [advTransparent, setAdvTransparent] = useState(false)
+  const [advStatusKey, setAdvStatusKey] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [resultBlob, setResultBlob] = useState<Blob | null>(null)
   const [loading, setLoading] = useState(false)
@@ -261,6 +266,38 @@ export default function ImagePixelate() {
     }
   }
 
+  const runAdvancedPixellise = async () => {
+    if (!file) return
+    setLoading(true)
+    setAdvStatusKey(null)
+    setResultUrl((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return null
+    })
+    setResultBlob(null)
+    try {
+      const { runPixelliseRestore } = await import('../lib/pixellise/pipeline')
+      const blob = await runPixelliseRestore(
+        file,
+        {
+          upscale: advUpscale,
+          numColors: advColors,
+          scaleResult: advScaleResult,
+          transparentBackground: advTransparent,
+        },
+        (key) => setAdvStatusKey(key),
+      )
+      setResultBlob(blob)
+      setResultUrl(URL.createObjectURL(blob))
+      message.success(t('pixelateAdvancedSuccess'))
+    } catch (e) {
+      message.error(t('pixelateAdvancedFailed') + ': ' + String(e))
+    } finally {
+      setLoading(false)
+      setAdvStatusKey(null)
+    }
+  }
+
   const run16Color = async () => {
     if (!file) return
     setLoading(true)
@@ -302,7 +339,7 @@ export default function ImagePixelate() {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Tabs
         activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as 'pixelate' | 'color16')}
+        onChange={(k) => setActiveTab(k as 'pixelate' | 'color16' | 'advanced')}
         items={[
           {
             key: 'pixelate',
@@ -345,6 +382,63 @@ export default function ImagePixelate() {
                   {t('pixelate16ColorDither')}
                 </Checkbox>
                 <Text type="secondary" style={{ fontSize: 12 }}>{t('pixelate16ColorDitherHint')}</Text>
+              </Space>
+            ),
+          },
+          {
+            key: 'advanced',
+            label: t('pixelateTabAdvanced'),
+            children: (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Text type="secondary" style={{ display: 'block' }}>{t('pixelateAdvancedHint')}</Text>
+                <Text type="secondary" style={{ display: 'block' }}>{t('pixelateAdvancedDesc')}</Text>
+                <div>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('pixelateAdvancedUpscale')}</Text>
+                  <Space wrap>
+                    <Slider
+                      min={2}
+                      max={7}
+                      step={1}
+                      value={advUpscale}
+                      onChange={(v) => setAdvUpscale(v as number)}
+                      style={{ width: 200, marginRight: 16 }}
+                    />
+                    <InputNumber min={2} max={7} value={advUpscale} onChange={(v) => setAdvUpscale(v ?? 5)} style={{ width: 90 }} />
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>{t('pixelateAdvancedUpscaleHint')}</Text>
+                </div>
+                <div>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('pixelateAdvancedColors')}</Text>
+                  <Space wrap>
+                    <Slider
+                      min={4}
+                      max={64}
+                      value={advColors}
+                      onChange={setAdvColors}
+                      style={{ width: 200, marginRight: 16 }}
+                    />
+                    <InputNumber min={4} max={256} value={advColors} onChange={(v) => setAdvColors(v ?? 32)} style={{ width: 90 }} />
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>{t('pixelateAdvancedColorsHint')}</Text>
+                </div>
+                <div>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>{t('pixelateAdvancedScaleResult')}</Text>
+                  <Space wrap>
+                    <Slider
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={advScaleResult}
+                      onChange={(v) => setAdvScaleResult(v as number)}
+                      style={{ width: 200, marginRight: 16 }}
+                    />
+                    <InputNumber min={1} max={5} value={advScaleResult} onChange={(v) => setAdvScaleResult(v ?? 1)} style={{ width: 90 }} />
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>{t('pixelateAdvancedScaleResultHint')}</Text>
+                </div>
+                <Checkbox checked={advTransparent} onChange={(e) => setAdvTransparent(e.target.checked)}>
+                  {t('pixelateAdvancedTransparent')}
+                </Checkbox>
               </Space>
             ),
           },
@@ -411,6 +505,14 @@ export default function ImagePixelate() {
           <Button type="primary" loading={loading} onClick={run16Color} disabled={!file}>
             {t('pixelate16ColorApply')}
           </Button>
+        )}
+        {activeTab === 'advanced' && (
+          <Button type="primary" loading={loading} onClick={runAdvancedPixellise} disabled={!file}>
+            {t('pixelateAdvancedApply')}
+          </Button>
+        )}
+        {activeTab === 'advanced' && advStatusKey && loading && (
+          <Text type="secondary">{t(advStatusKey)}</Text>
         )}
         {resultUrl && (
           <Button icon={<DownloadOutlined />} onClick={download}>

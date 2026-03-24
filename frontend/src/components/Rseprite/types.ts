@@ -21,6 +21,11 @@ export interface Frame {
   id: string
   /** 该帧上各图层的 cel，顺序与 document.layers 一致 */
   cels: Cel[]
+  /**
+   * 帧延时（毫秒），第 8 步占位；后续播放/导出用。
+   * 缺省按 100ms 显示与复制。
+   */
+  durationMs?: number
 }
 
 export interface Document {

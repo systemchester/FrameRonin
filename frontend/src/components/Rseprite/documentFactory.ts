@@ -17,7 +17,8 @@ export function duplicateFrameDeep(doc: Document, sourceFrameIndex: number): Fra
     layerId: cel.layerId,
     imageData: new ImageData(new Uint8ClampedArray(cel.imageData.data), w, h),
   }))
-  return { id: newId('frame'), cels }
+  const durationMs = src.durationMs ?? 100
+  return { id: newId('frame'), cels, durationMs }
 }
 
 /** 全透明 RGBA 画布 */
@@ -59,6 +60,7 @@ export function createInitialDocument(width: number, height: number): Document {
   const frame: Frame = {
     id: newId('frame'),
     cels: [cel0, cel1],
+    durationMs: 100,
   }
 
   return {
