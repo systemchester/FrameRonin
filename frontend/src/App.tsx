@@ -97,9 +97,9 @@ function App() {
     target_size: { w: 256, h: 256 },
     transparent: true,
     padding: 4,
-    spacing: 4,
+    spacing: 0,
     layout_mode: 'fixed_columns',
-    columns: 12,
+    columns: 4,
     matte_strength: 0.6,
     crop_mode: 'tight_bbox',
   })

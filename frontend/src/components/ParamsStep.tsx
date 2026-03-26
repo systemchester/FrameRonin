@@ -404,7 +404,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
   const [form] = Form.useForm()
   const fps = Form.useWatch('fps', form) ?? params.fps ?? 12
   const maxFrames = Form.useWatch('max_frames', form) ?? params.max_frames ?? 300
-  const columns = Form.useWatch('columns', form) ?? params.columns ?? 12
+  const columns = Form.useWatch('columns', form) ?? params.columns ?? 4
   const videoRef = useRef<HTMLVideoElement>(null)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [duration, setDuration] = useState(0)
@@ -537,7 +537,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
   useEffect(() => {
     if (mattedFrames.length > 0) {
       const cols = Math.min(12, Math.max(4, Math.ceil(Math.sqrt(mattedFrames.length))))
-      form.setFieldsValue({ columns: cols, padding: 4, spacing: 4 })
+      form.setFieldsValue({ columns: cols, padding: 4, spacing: 0 })
     }
   }, [mattedFrames.length, form])
 
@@ -552,8 +552,8 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
     const targetW = form.getFieldValue('target_w') ?? videoSize?.w ?? 256
     const targetH = form.getFieldValue('target_h') ?? videoSize?.h ?? 256
     const padding = form.getFieldValue('padding') ?? 4
-    const spacing = form.getFieldValue('spacing') ?? 4
-    const columns = form.getFieldValue('columns') ?? 12
+    const spacing = form.getFieldValue('spacing') ?? 0
+    const columns = form.getFieldValue('columns') ?? 4
     const timestamps = selectedFrameIndices.map((idx) => extractedFrames[idx]?.timestamp ?? 0)
     setExporting(true)
     setExportedPreview(null)
@@ -892,6 +892,28 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
     }
   }
 
+  /** 不抠图：将已选提取帧当作「抠图结果」进入雪碧图导出等下一步 */
+  const skipMattingToNext = () => {
+    if (selectedFrameIndices.length === 0) {
+      message.warning(t('selectFrameForMatte'))
+      return
+    }
+    if (matting) return
+    const results: { blob: Blob; dataUrl: string }[] = []
+    for (const idx of selectedFrameIndices) {
+      const frame = extractedFrames[idx]
+      if (!frame) continue
+      results.push({ blob: frame.blob, dataUrl: frame.dataUrl })
+    }
+    if (results.length === 0) return
+    setMattedFrames(results)
+    const frameSize = extractedFrameSize ?? videoSize
+    if (frameSize && results.length > 0) {
+      form.setFieldsValue({ target_w: frameSize.w, target_h: frameSize.h })
+    }
+    message.success(t('skipMatteSuccess', { n: results.length }))
+  }
+
   const downloadMattedZip = async () => {
     if (mattedFrames.length === 0) return
     const zip = new JSZip()
@@ -944,9 +966,9 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
         target_h: params.target_size?.h ?? 256,
         transparent: params.transparent ?? true,
         padding: params.padding ?? 4,
-        spacing: params.spacing ?? 4,
+        spacing: params.spacing ?? 0,
         layout_mode: params.layout_mode ?? 'fixed_columns',
-        columns: params.columns ?? 12,
+        columns: params.columns ?? 4,
         matte_strength: (params.matte_strength ?? 0.6) * 100,
         crop_mode: params.crop_mode ?? 'tight_bbox',
       }}
@@ -960,9 +982,9 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
           target_size: { w: (v.target_w as number) ?? 256, h: (v.target_h as number) ?? 256 },
           transparent: (v.transparent as boolean) ?? true,
           padding: (v.padding as number) ?? 4,
-          spacing: (v.spacing as number) ?? 4,
+          spacing: (v.spacing as number) ?? 0,
           layout_mode: (v.layout_mode as 'fixed_columns' | 'auto_square') ?? 'fixed_columns',
-          columns: (v.columns as number) ?? 12,
+          columns: (v.columns as number) ?? 4,
           matte_strength: ((v.matte_strength as number) ?? 60) / 100,
           crop_mode: (v.crop_mode as 'none' | 'tight_bbox' | 'safe_bbox') ?? 'tight_bbox',
         })
@@ -1428,6 +1450,9 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
                 >
                   {t('startMatteWithFrames', { n: selectedFrameIndices.length })}
                 </Button>
+                <Button type="default" disabled={selectedFrameIndices.length === 0 || matting} onClick={skipMattingToNext}>
+                  {t('skipMatteToNext')}
+                </Button>
               </Space>
               {matting && <Progress percent={mattingProgress} size="small" style={{ marginTop: 12 }} />}
 
@@ -1574,6 +1599,9 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
                         </Form.Item>
                       </Col>
                     </Row>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8, lineHeight: 1.5 }}>
+                      {t('layoutFieldsHint')}
+                    </Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {t('rowsCount')}: {Math.ceil(mattedFrames.length / columns)}
                     </Text>

@@ -53,4 +53,9 @@ export const WORKFLOW_BPSET_PRESETS: WorkflowBpsetPresetMeta[] = [
     url: bpsetUrl('狗.json'),
     labelKey: 'roninProWorkflowBpset_gou',
   },
+  {
+    id: 'gongbing',
+    url: bpsetUrl('弓兵.json'),
+    labelKey: 'roninProWorkflowBpset_gongbing',
+  },
 ]
