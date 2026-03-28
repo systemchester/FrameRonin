@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, InputNumber, message, Space, Typography, Upload } from 'antd'
+import { Button, InputNumber, message, Select, Space, Typography, Upload } from 'antd'
 import { DownloadOutlined } from '@ant-design/icons'
 import type { UploadFile, UploadProps } from 'antd'
 import { useLanguage } from '../i18n/context'
@@ -11,6 +11,15 @@ const { Text } = Typography
 
 const IMAGE_ACCEPT = ['.png', '.jpg', '.jpeg', '.webp']
 
+type UnifyPadH = 'left' | 'center' | 'right'
+type UnifyPadV = 'top' | 'center' | 'bottom'
+
+function cellInnerOffset(max: number, img: number, align: 'start' | 'center' | 'end'): number {
+  if (align === 'start') return 0
+  if (align === 'center') return Math.floor((max - img) / 2)
+  return max - img
+}
+
 export default function RoninProUnifySize() {
   const { t } = useLanguage()
   const [files, setFiles] = useState<File[]>([])
@@ -18,6 +27,10 @@ export default function RoninProUnifySize() {
   const [loading, setLoading] = useState(false)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [cols, setCols] = useState(4)
+  /** 水平：透明补在另一侧（靠左=右扩，靠右=左扩，居中=两侧） */
+  const [padH, setPadH] = useState<UnifyPadH>('center')
+  /** 垂直：靠下=默认往上扩透明，靠上=往下扩，居中=上下各半 */
+  const [padV, setPadV] = useState<UnifyPadV>('bottom')
   const [dims, setDims] = useState<{ maxW: number; maxH: number } | null>(null)
 
   useEffect(() => {
@@ -96,14 +109,19 @@ export default function RoninProUnifySize() {
       canvas.height = outH
       const ctx = canvas.getContext('2d')!
       ctx.imageSmoothingEnabled = false
+      ctx.clearRect(0, 0, outW, outH)
+
+      const hAlign: 'start' | 'center' | 'end' =
+        padH === 'left' ? 'start' : padH === 'right' ? 'end' : 'center'
+      const vAlign: 'start' | 'center' | 'end' =
+        padV === 'top' ? 'start' : padV === 'bottom' ? 'end' : 'center'
 
       for (let i = 0; i < imgs.length; i++) {
         const img = imgs[i]!
         const row = Math.floor(i / c)
         const col = i % c
-        // 宽度居中，高度仅往上扩（图在格子底部）
-        const dx = col * maxW + Math.floor((maxW - img.naturalWidth) / 2)
-        const dy = row * maxH + (maxH - img.naturalHeight)
+        const dx = col * maxW + cellInnerOffset(maxW, img.naturalWidth, hAlign)
+        const dy = row * maxH + cellInnerOffset(maxH, img.naturalHeight, vAlign)
         ctx.drawImage(
           img,
           0,
@@ -174,17 +192,49 @@ export default function RoninProUnifySize() {
 
       {files.length > 0 && (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <span>
-              <Text type="secondary">{t('roninProUnifySizeCols')}:</Text>
-              <InputNumber
-                min={1}
-                max={64}
-                value={cols}
-                onChange={(v) => setCols(v ?? 4)}
-                style={{ width: 64, marginLeft: 8 }}
-              />
-            </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              <span>
+                <Text type="secondary">{t('roninProUnifySizeCols')}:</Text>
+                <InputNumber
+                  min={1}
+                  max={64}
+                  value={cols}
+                  onChange={(v) => setCols(v ?? 4)}
+                  style={{ width: 64, marginLeft: 8 }}
+                />
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Text type="secondary">{t('roninProUnifySizePadH')}:</Text>
+                <Select<UnifyPadH>
+                  value={padH}
+                  onChange={setPadH}
+                  style={{ width: 120 }}
+                  options={[
+                    { value: 'left', label: t('roninProUnifySizePadHLeft') },
+                    { value: 'center', label: t('roninProUnifySizePadHCenter') },
+                    { value: 'right', label: t('roninProUnifySizePadHRight') },
+                  ]}
+                />
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Text type="secondary">{t('roninProUnifySizePadV')}:</Text>
+                <Select<UnifyPadV>
+                  value={padV}
+                  onChange={setPadV}
+                  style={{ width: 120 }}
+                  options={[
+                    { value: 'top', label: t('roninProUnifySizePadVTop') },
+                    { value: 'center', label: t('roninProUnifySizePadVCenter') },
+                    { value: 'bottom', label: t('roninProUnifySizePadVBottom') },
+                  ]}
+                />
+              </span>
+            </div>
+            <Text type="secondary" style={{ fontSize: 12, margin: 0 }}>
+              {t('roninProUnifySizePadExplain')}
+            </Text>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
             <Button type="primary" loading={loading} onClick={runUnify}>
               {t('roninProUnifySizeRun')}
             </Button>
@@ -193,6 +243,7 @@ export default function RoninProUnifySize() {
                 {t('roninProUnifySizeDownload')}
               </Button>
             )}
+            </div>
           </div>
           {dims && (
             <Text type="secondary" style={{ fontSize: 12 }}>

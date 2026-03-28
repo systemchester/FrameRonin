@@ -46,6 +46,9 @@ export const GEM_PIXEL_TUNSHITIANDI_S_URL =
 /** 生成大杂烩 · RPG骑马（潜墨千羽） */
 export const GEM_PIXEL_RPG_HORSE_QIANMO_URL =
   'https://gemini.google.com/gem/901be39a347f?usp=sharing'
+/** 生成大杂烩 · RPGold（s） */
+export const GEM_PIXEL_RPGOLD_S_URL =
+  'https://gemini.google.com/gem/1XeOiyNUE7oGZBn9rk4Xlk4fEzDGwIbAL?usp=sharing'
 
 export interface GemPixelPotpourriItem {
   url: string
@@ -66,7 +69,11 @@ export const GEM_PIXEL_POTPOURRI_HUB_SLOTS: (GemPixelPotpourriItem | null)[] = [
     labelKey: 'gemPixelPotpourriRpgHorseQianmo',
     previewPublicPath: 'gempic/riderrpg.png',
   },
-  null,
+  {
+    url: GEM_PIXEL_RPGOLD_S_URL,
+    labelKey: 'gemPixelPotpourriRpgoldS',
+    previewPublicPath: 'gempic/rpgold.png',
+  },
   null,
   null,
   null,
