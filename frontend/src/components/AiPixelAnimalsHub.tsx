@@ -1,18 +1,16 @@
 import { Button, Card, Space, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useLanguage } from '../i18n/context'
+import {
+  GEM_PIXEL_BIRD_MONSTER_URL,
+  GEM_PIXEL_DOG_URL,
+  GEM_PIXEL_JIKUN_URL,
+} from '../lib/gemPixelUrls'
 
 const { Text, Title } = Typography
 
 const base =
   import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`
-
-const GEM_PIXEL_DOG_URL =
-  'https://gemini.google.com/gem/190hxL7jtTO--9GCNMVvmtYsVZ2H6VBi0?usp=sharing'
-const GEM_PIXEL_BIRD_MONSTER_URL =
-  'https://gemini.google.com/gem/1pouwyiLb7tf6A9U6PS1z3S8wnSofDALN?usp=sharing'
-const GEM_PIXEL_JIKUN_URL =
-  'https://gemini.google.com/gem/1AQglfk8d8QzYz46oeP5CZzDjyhUK6_dx?usp=sharing'
 
 const DOG_PREVIEW_GIFS = [
   `${base}animals/dog1.gif`,
@@ -108,7 +106,7 @@ export default function AiPixelAnimalsHub({ onBack }: AiPixelAnimalsHubProps) {
             rel="noopener noreferrer"
             style={{ minWidth: 128 }}
           >
-            只因
+            {t('aiPixelAnimalsGemJikun')}
           </Button>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             {JIKUN_PREVIEW_GIFS.map((src, i) => (

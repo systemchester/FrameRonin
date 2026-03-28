@@ -27,6 +27,7 @@ import AssetsAndSourceShare from './components/AssetsAndSourceShare'
 import ControlTest from './components/ControlTest'
 import RoninPro from './components/RoninPro'
 import AiPixelAnimalsHub from './components/AiPixelAnimalsHub'
+import GemPixelPotpourriHub from './components/GemPixelPotpourriHub'
 
 const ImageMatte = lazy(() => import('./components/ImageMatte'))
 import ParamsStep from './components/ParamsStep'
@@ -486,6 +487,8 @@ function App() {
             </Card>
           ) : mode === 'aiPixelAnimals' ? (
             <AiPixelAnimalsHub onBack={() => setMode(null)} />
+          ) : mode === 'gemPixelPotpourri' ? (
+            <GemPixelPotpourriHub onBack={() => setMode(null)} />
           ) : (
             <>
               <Steps

@@ -1,14 +1,15 @@
 import { Button, Typography } from 'antd'
 import { useLanguage } from '../i18n/context'
+import {
+  GEM_8DIR_TOPDOWN_URL,
+  GEM_HORIZONTAL_CHAR_URL,
+  GEM_HORSE_RIDING_URL,
+  GEM_ONE_IMAGE_ALL_ACTIONS_2_URL,
+  GEM_ONE_IMAGE_ALL_ACTIONS_URL,
+  GEM_V4TX3_URL,
+} from '../lib/gemPixelUrls'
 
 const { Text } = Typography
-
-const GEM_V4TX3_URL = 'https://gemini.google.com/gem/1zerS4eXHUGNj2tj-63omHyFRo_4K5S7p?usp=sharing'
-const GEM_HORIZONTAL_CHAR_URL = 'https://gemini.google.com/gem/10LatqlJGxea-I-JCyoNo1rERgZwtKpBi?usp=sharing'
-const GEM_8DIR_TOPDOWN_URL = 'https://gemini.google.com/gem/1Xr3TdyAOLugE19v5poA4LpJSfVT4Drox?usp=sharing'
-const GEM_HORSE_RIDING_URL = 'https://gemini.google.com/gem/1n--WxKek4kEZO_gqQeab-u5b3mO-qyl1?usp=sharing'
-const GEM_ONE_IMAGE_ALL_ACTIONS_URL = 'https://gemini.google.com/gem/1pmNojUIGsB1j5gpEwJIKziyKc-XWM5RP?usp=sharing'
-const GEM_ONE_IMAGE_ALL_ACTIONS_2_URL = 'https://gemini.google.com/gem/1JV-B4NS1-LQlqXIMrbtM5kq70hxCcCr2?usp=sharing'
 
 const HORIZONTAL_CHAR_GIFS = ['h2s1 (1).gif', 'h2s1 (2).gif', 'h2s1 (3).gif', 'h2s1 (4).gif', 'h2s1 (5).gif']
 const D8S_TOPDOWN_GIFS = ['d8s (1).gif', 'd8s (2).gif', 'd8s (3).gif', 'd8s (4).gif', 'd8s (5).gif']

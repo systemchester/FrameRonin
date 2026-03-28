@@ -1,10 +1,26 @@
 import type { CSSProperties } from 'react'
 import { Card, Row, Col, Typography, Space, Button } from 'antd'
-import { ArrowsAltOutlined, BlockOutlined, BugOutlined, FileImageOutlined, PictureOutlined, VideoCameraOutlined, ThunderboltOutlined, BorderOuterOutlined, ScissorOutlined, SafetyOutlined, ShareAltOutlined, ControlOutlined, RocketOutlined } from '@ant-design/icons'
+import { ArrowsAltOutlined, AppstoreOutlined, BlockOutlined, BugOutlined, FileImageOutlined, PictureOutlined, VideoCameraOutlined, ThunderboltOutlined, BorderOuterOutlined, ScissorOutlined, SafetyOutlined, ShareAltOutlined, ControlOutlined, RocketOutlined } from '@ant-design/icons'
 import { useAuth } from '../auth/context'
 import { RONIN_PRO_REQUIRE_NFT } from '../config/features'
 import { useNftOwnership } from '../hooks/useNftOwnership'
 import { useLanguage } from '../i18n/context'
+import {
+  GEM_CHAR_V23OT_URL,
+  GEM_ILLUST_URL,
+  GEM_MONSTER_ZOMBIE_B1,
+  GEM_MONSTER_ZOMBIE_B2,
+  GEM_RPGMAKER_URL_V1,
+  GEM_RPGMAKER_URL_V1_1,
+  GEM_RPGMAKER_URL_V3,
+  GEM_SCENE_URL,
+  GEM_SCENE_URL_2,
+  GEM_SCENE_URL_3,
+  GEM_SCENE_URL_4,
+  GEM_V2_URL,
+  GEM_V2_URL_2,
+  GEM_V3_URL,
+} from '../lib/gemPixelUrls'
 
 const { Text } = Typography
 
@@ -57,21 +73,6 @@ function GamepadIcon({ style }: { style?: CSSProperties }) {
   )
 }
 
-const GEM_V2_URL = 'https://gemini.google.com/gem/1ex8XOSNJzjAND6Ujz9aKFKbIyqzcvTCv?usp=sharing'
-const GEM_V2_URL_2 = 'https://gemini.google.com/gem/1kEnaydh5Ssne-XxSUQFgVxie93u-kR4P?usp=sharing'
-const GEM_V3_URL = 'https://gemini.google.com/gem/1hAu-pMGYI34Bp_ttYHrRIGljhjbmoFjZ?usp=sharing'
-const GEM_MONSTER_ZOMBIE_B1 = 'https://gemini.google.com/gem/1AIhSwGHFN1K2wPZwrgnTr7xxM5IwDb3i?usp=sharing'
-const GEM_MONSTER_ZOMBIE_B2 = 'https://gemini.google.com/gem/1qnjyOOhjMk8k5sW4IXaRDbaxk5yZ63y1?usp=sharing'
-const GEM_CHAR_V23OT_URL = 'https://gemini.google.com/gem/1mRxvjPRe_jWUxHNB9R7S3aiLiHOTQIU5?usp=sharing'
-const GEM_SCENE_URL = 'https://gemini.google.com/gem/1a83JP082OIliUQZN5SsBguMOrYm4g6P2?usp=sharing'
-const GEM_SCENE_URL_2 = 'https://gemini.google.com/gem/1u2qo4OVCxniX5swJttIS2GuqPjswycmb?usp=sharing'
-const GEM_SCENE_URL_3 = 'https://gemini.google.com/gem/1nrZ7I6KFoPdoF-Ej2kte2edB0Ct-Sb10?usp=sharing'
-const GEM_SCENE_URL_4 = 'https://gemini.google.com/gem/1VuZIChmmyZtWBRdlLnTQREY1gODT4sEJ?usp=sharing' // 街机场景
-const GEM_ILLUST_URL = 'https://gemini.google.com/gem/1IUuJXgHTTbMEgv5D_G0HXSHXxYdcfTZg?usp=sharing'
-const GEM_RPGMAKER_URL_V1 = 'https://gemini.google.com/gem/1zkDfsN972fczP66xwCiQ6H0jP7HLtGz5?usp=sharing'
-const GEM_RPGMAKER_URL_V1_1 = 'https://gemini.google.com/gem/1kUViEEO8ehmIHGNHThI77xpzSXx2KHFb?usp=sharing'
-const GEM_RPGMAKER_URL_V3 = 'https://gemini.google.com/gem/1b5w2r0-kmMAtMhuGloKxJWuxULoMm177?usp=sharing'
-
 export type AppMode =
   | 'video'
   | 'image'
@@ -89,6 +90,7 @@ export type AppMode =
   | 'controlTestArcade'
   | 'roninPro'
   | 'aiPixelAnimals'
+  | 'gemPixelPotpourri'
   | null
 
 interface Props {
@@ -572,18 +574,20 @@ export default function ModeSelector({ onSelect }: Props) {
           </Col>
         </Row>
       )}
-      <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }}>
-        <Col xs={24}>
+      <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }} align="stretch">
+        <Col xs={24} md={12} style={{ display: 'flex' }}>
           <Card
             hoverable
             onClick={() => onSelect('aiPixelAnimals')}
-            styles={{ body: HOME_CARD_BODY_LARGE }}
+            styles={{ body: HOME_CARD_BODY_LARGE_GROW }}
             style={{
               textAlign: 'center',
               cursor: 'pointer',
               borderColor: '#9a8b78',
               background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
               borderWidth: 2,
+              flex: 1,
+              width: '100%',
             }}
           >
             <BugOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
@@ -592,6 +596,30 @@ export default function ModeSelector({ onSelect }: Props) {
             </div>
             <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4, ...HOME_DESC_TEXT }}>
               {t('moduleAiPixelAnimalsDesc')}
+            </Text>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} style={{ display: 'flex' }}>
+          <Card
+            hoverable
+            onClick={() => onSelect('gemPixelPotpourri')}
+            styles={{ body: HOME_CARD_BODY_LARGE_GROW }}
+            style={{
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderColor: '#9a8b78',
+              background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+              borderWidth: 2,
+              flex: 1,
+              width: '100%',
+            }}
+          >
+            <AppstoreOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
+            <div style={{ lineHeight: 1.4 }}>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleGemPixelPotpourri')}</Text>
+            </div>
+            <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4, ...HOME_DESC_TEXT }}>
+              {t('moduleGemPixelPotpourriDesc')}
             </Text>
           </Card>
         </Col>
