@@ -77,7 +77,7 @@ function App() {
   const { lang, setLang, t } = useLanguage()
   const [gemToken, setGemToken] = useState(() => getGemToken())
   const [mode, setMode] = useState<AppMode>(null)
-  /** 首页快捷键进入 RoninPro 子模块（如 R → 自定义缩放） */
+  /** 首页快捷键：R/T RoninPro 子模块、S → Sprite Sheet 调整等 */
   const [roninProDeepLink, setRoninProDeepLink] = useState<string | null>(null)
   const consumeRoninProDeepLink = useCallback(() => setRoninProDeepLink(null), [])
   const [imageSubMode, setImageSubMode] = useState<ImageSubMode | 'select'>('select')
@@ -96,7 +96,7 @@ function App() {
     max_frames: 300,
     target_size: { w: 256, h: 256 },
     transparent: true,
-    padding: 4,
+    padding: 0,
     spacing: 0,
     layout_mode: 'fixed_columns',
     columns: 4,
@@ -213,6 +213,23 @@ function App() {
       e.preventDefault()
       setImageSubMode('select')
       setMode('image')
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode])
+
+  /** 首页按 S 进入 Sprite Sheet 调整 */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (mode !== null) return
+      if (e.code !== 'KeyS') return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const el = document.activeElement
+      const tag = el?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea') return
+      if (el instanceof HTMLElement && el.isContentEditable) return
+      e.preventDefault()
+      setMode('spriteadjust')
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

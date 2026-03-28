@@ -22,6 +22,7 @@ import {
   buildDefaultRearrangeGrid,
   computeWorkflowRunStrategy,
   createGraphNode,
+  getStitchInputSlotCount,
   parseWorkflowGraph,
   resizeRearrangeGrid,
   runDagExecution,
@@ -170,6 +171,33 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
     setGraphNodes((list) =>
       list.map((n) => (n.id === id ? { ...n, params: { ...n.params, [key]: value } } : n))
     )
+  }, [])
+
+  const adjustStitchSlotCount = useCallback((id: string, delta: number) => {
+    let nextCount: number | null = null
+    setGraphNodes((list) => {
+      const node = list.find((x) => x.id === id && x.type === 'simpleStitchVertical')
+      if (!node) return list
+      const cur = getStitchInputSlotCount(node)
+      const next = Math.max(2, Math.min(16, cur + delta))
+      if (next === cur) return list
+      nextCount = next
+      return list.map((n) =>
+        n.id === id && n.type === 'simpleStitchVertical'
+          ? { ...n, params: { ...n.params, stitchSlotCount: next } }
+          : n
+      )
+    })
+    if (nextCount !== null) {
+      setGraphEdges((prev) =>
+        prev.filter((ed) => {
+          if (ed.target !== id) return true
+          const m = /^in(\d+)$/.exec(ed.targetPort ?? '')
+          if (!m) return true
+          return parseInt(m[1], 10) <= nextCount!
+        })
+      )
+    }
   }, [])
 
   const updateCustomRearrangeDimension = useCallback(
@@ -850,8 +878,46 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
               </div>
             </Space>
           )
-        case 'simpleStitchVertical':
-          return <Text style={{ color: '#8b93a5', fontSize: 11 }}>{t('roninProWorkflowSimpleStitchVerticalHint')}</Text>
+        case 'simpleStitchVertical': {
+          const slots = getStitchInputSlotCount(n)
+          return (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <div>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowStitchMode')}</Text>
+                <Select
+                  size="small"
+                  style={{ ...INPUT_FULL, marginTop: 4 }}
+                  value={Math.max(0, Math.min(2, Math.round(p.stitchMode ?? 0)))}
+                  options={[
+                    { value: 0, label: t('roninProWorkflowStitchModeVertical') },
+                    { value: 1, label: t('roninProWorkflowStitchModeHorizontal') },
+                    { value: 2, label: t('roninProWorkflowStitchModeOverlay') },
+                  ]}
+                  onChange={(v) => updateNodeParam(id, 'stitchMode', typeof v === 'number' ? v : 0)}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Text style={{ color: '#9aa3b5', fontSize: 11 }}>{t('roninProWorkflowStitchInputSlots', { n: slots })}</Text>
+                <Button
+                  type="dashed"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  disabled={slots >= 16}
+                  onClick={() => adjustStitchSlotCount(id, 1)}
+                />
+                <Button
+                  type="default"
+                  size="small"
+                  disabled={slots <= 2}
+                  onClick={() => adjustStitchSlotCount(id, -1)}
+                >
+                  −
+                </Button>
+              </div>
+              <Text style={{ color: '#7a8499', fontSize: 10 }}>{t('roninProWorkflowSimpleStitchVerticalHint')}</Text>
+            </Space>
+          )
+        }
         case 'gridDeleteRow':
         case 'gridDeleteCol':
         case 'gridExpandRow':
@@ -1183,7 +1249,7 @@ export default function RoninProCustomWorkflow({ onSendToFineProcess }: RoninPro
           return null
       }
     },
-    [t, updateNodeParam, updateCustomRearrangeDimension, updateCustomRearrangeCell, fillRearrangeGridAutoSequence, fileItems]
+    [t, updateNodeParam, adjustStitchSlotCount, updateCustomRearrangeDimension, updateCustomRearrangeCell, fillRearrangeGridAutoSequence, fileItems]
   )
 
   return (

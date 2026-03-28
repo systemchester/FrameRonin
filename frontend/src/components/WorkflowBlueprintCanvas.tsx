@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CloseOutlined } from '@ant-design/icons'
-import type { GraphNode, WorkflowEdge, WorkflowInputPort, WorkflowNodeType } from '../lib/roninProWorkflow'
-import { WORKFLOW_DRAG_INPUT_IMAGE_INDEX } from '../lib/roninProWorkflow'
+import type { GraphNode, WorkflowEdge, WorkflowNodeType } from '../lib/roninProWorkflow'
+import { getStitchInputSlotCount, WORKFLOW_DRAG_INPUT_IMAGE_INDEX } from '../lib/roninProWorkflow'
 
 export const BLUEPRINT_WORLD_W = 8192
 export const BLUEPRINT_WORLD_H = 6144
@@ -16,11 +16,23 @@ const PIN_HIT = 28
 /** 双背景抠图：左列上下两个输入口（世界坐标系内相对节点 top 的 Y 偏移） */
 const DOUBLE_BG_PIN_A_Y = 16
 const DOUBLE_BG_PIN_B_Y = 52
+/** 简易拼接：多入口自上而下，与节点内 + 扩展一致 */
+const STITCH_PIN_FIRST_Y = 22
+const STITCH_PIN_STEP = 28
 
-function inputPinWorld(n: GraphNode, port?: WorkflowInputPort): { x: number; y: number } {
+function stitchSlotIndexFromPort(port: string | undefined): number {
+  if (!port || !/^in\d+$/.test(port)) return 1
+  return Math.max(1, parseInt(port.slice(2), 10))
+}
+
+function inputPinWorld(n: GraphNode, port?: string): { x: number; y: number } {
   if (n.type === 'matteDoubleBackground') {
     const yOff = port === 'inB' ? DOUBLE_BG_PIN_B_Y : DOUBLE_BG_PIN_A_Y
     return { x: n.x, y: n.y + yOff }
+  }
+  if (n.type === 'simpleStitchVertical') {
+    const slot = stitchSlotIndexFromPort(port)
+    return { x: n.x, y: n.y + STITCH_PIN_FIRST_Y + (slot - 1) * STITCH_PIN_STEP }
   }
   return { x: n.x, y: n.y + BLUEPRINT_PIN_Y }
 }
@@ -55,6 +67,12 @@ export function getCustomRearrangeInputWidth(n: GraphNode): number {
 
 type ConnectingState = { sourceId: string } | null
 
+function stitchNodeMinHeight(n: GraphNode): number | undefined {
+  if (n.type !== 'simpleStitchVertical') return undefined
+  const k = getStitchInputSlotCount(n)
+  return HEADER_H + STITCH_PIN_FIRST_Y + (k - 1) * STITCH_PIN_STEP + 24 + 168
+}
+
 export type BlueprintToolPlaceAction =
   | { type: 'inputImage'; imageIndex1: number }
   | { type: 'resize' }
@@ -80,7 +98,7 @@ export interface WorkflowBlueprintCanvasProps {
   setEdges: React.Dispatch<React.SetStateAction<WorkflowEdge[]>>
   getNodeTitle: (n: GraphNode) => string
   renderNodeBody: (n: GraphNode) => React.ReactNode
-  tHint: (key: string) => string
+  tHint: (key: string, params?: Record<string, string | number>) => string
   onPaletteDrop: (type: WorkflowNodeType, x: number, y: number) => void
   /** 从批量图列表拖入的 1-based 序号 */
   onInputImageDrop?: (imageIndex1: number, x: number, y: number) => void
@@ -187,12 +205,25 @@ export default function WorkflowBlueprintCanvas({
       if (c && we) {
         const list = nodesRef.current
         const hit2 = PIN_HIT * PIN_HIT
-        let best: { n: GraphNode; port?: WorkflowInputPort } | null = null
+        let best: { n: GraphNode; port?: string } | null = null
         let bestD = hit2
         for (const n of list) {
           if (n.id === c.sourceId) continue
           if (n.type === 'matteDoubleBackground') {
             for (const port of ['inA', 'inB'] as const) {
+              const p = inputPinWorld(n, port)
+              const dx = we.x - p.x
+              const dy = we.y - p.y
+              const d2 = dx * dx + dy * dy
+              if (d2 < bestD) {
+                bestD = d2
+                best = { n, port }
+              }
+            }
+          } else if (n.type === 'simpleStitchVertical') {
+            const k = getStitchInputSlotCount(n)
+            for (let s = 1; s <= k; s++) {
+              const port = `in${s}`
               const p = inputPinWorld(n, port)
               const dx = we.x - p.x
               const dy = we.y - p.y
@@ -217,12 +248,17 @@ export default function WorkflowBlueprintCanvas({
           const sid = c.sourceId
           const tid = best.n.id
           const tPort =
-            best.n.type === 'matteDoubleBackground' ? best.port : undefined
+            best.n.type === 'matteDoubleBackground'
+              ? best.port
+              : best.n.type === 'simpleStitchVertical'
+                ? best.port
+                : undefined
           setEdges((prev) => {
             let next = prev.filter((ed) => ed.source !== sid)
             if (tPort === 'inA' || tPort === 'inB') {
               next = next.filter((ed) => !(ed.target === tid && ed.targetPort === tPort))
-            } else if (best.n.type === 'simpleStitchVertical') {
+            } else if (best.n.type === 'simpleStitchVertical' && tPort && /^in\d+$/.test(tPort)) {
+              next = next.filter((ed) => !(ed.target === tid && ed.targetPort === tPort))
               next = next.filter((ed) => !(ed.source === sid && ed.target === tid))
             } else {
               next = next.filter((ed) => ed.target !== tid)
@@ -555,6 +591,7 @@ export default function WorkflowBlueprintCanvas({
           {nodes.map((n) => {
             const sel = selectedId === n.id
             const nodeW = getBlueprintNodeWidth(n)
+            const stitchMinH = stitchNodeMinHeight(n)
             return (
               <div
                 key={n.id}
@@ -563,7 +600,7 @@ export default function WorkflowBlueprintCanvas({
                   left: n.x,
                   top: n.y,
                   width: nodeW,
-                  minHeight: 72,
+                  minHeight: stitchMinH ?? 72,
                   borderRadius: 6,
                   border: sel ? '2px solid #4fc3f7' : '1px solid #3d4555',
                   background: 'linear-gradient(180deg, #252830 0%, #1e2128 100%)',
@@ -607,6 +644,26 @@ export default function WorkflowBlueprintCanvas({
                       }}
                     />
                   </>
+                ) : n.type === 'simpleStitchVertical' ? (
+                  Array.from({ length: getStitchInputSlotCount(n) }, (_, i) => i + 1).map((slot) => (
+                    <div
+                      key={slot}
+                      title={tHint('roninProWorkflowPinInStitchN', { n: slot })}
+                      style={{
+                        position: 'absolute',
+                        left: -10,
+                        top: STITCH_PIN_FIRST_Y + (slot - 1) * STITCH_PIN_STEP - 8,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#1a1d24',
+                        border: '2px solid #9ad4c8',
+                        boxShadow: '0 0 6px rgba(154,212,200,0.4)',
+                        zIndex: 5,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  ))
                 ) : (
                   <div
                     title={tHint('roninProWorkflowPinIn')}

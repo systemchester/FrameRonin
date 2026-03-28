@@ -30,7 +30,7 @@ import {
   doubleBackgroundMatteFromBlobs,
   postProcessDoubleBgMatteBlob,
 } from './doubleBackgroundMatte'
-import { stitchVerticalImageBlobs } from './simpleStitchVertical'
+import { stitchImageBlobs } from './simpleStitchVertical'
 
 export const RONIN_PRO_WORKFLOW_VERSION = 1
 
@@ -85,14 +85,24 @@ export interface WorkflowEdge {
   id: string
   source: string
   target: string
-  /** 仅 matteDoubleBackground：必须标明 inA / inB */
-  targetPort?: WorkflowInputPort
+  /** 双背景 inA/inB；简易拼接 in1、in2…（按序号拼） */
+  targetPort?: string
 }
 
 /** 画布上的节点（含坐标） */
 export type GraphNode = WorkflowNode & { x: number; y: number }
 
-export const RONIN_PRO_WORKFLOW_GRAPH_VERSION = 6
+export const RONIN_PRO_WORKFLOW_GRAPH_VERSION = 7
+
+/** 简易拼接左侧入口编号 in1… */
+export function isStitchSlotPort(p: string | undefined | null): p is string {
+  return typeof p === 'string' && /^in\d+$/.test(p)
+}
+
+export function getStitchInputSlotCount(n: GraphNode | WorkflowNode): number {
+  if (n.type !== 'simpleStitchVertical') return 0
+  return Math.max(2, Math.min(16, Math.round(n.params.stitchSlotCount ?? 2)))
+}
 
 /** 从批量列表拖入蓝图时的 dataTransfer type，值为 1-based 序号字符串 */
 export const WORKFLOW_DRAG_INPUT_IMAGE_INDEX = 'application/x-frameronin-workflow-input-image-index'
@@ -133,7 +143,7 @@ export const WORKFLOW_PALETTE: { type: WorkflowNodeType; defaultParams: Record<s
     },
   },
   { type: 'mergeStrip', defaultParams: { mergeCols: 4, frameCount: 16 } },
-  { type: 'simpleStitchVertical', defaultParams: {} },
+  { type: 'simpleStitchVertical', defaultParams: { stitchMode: 0, stitchSlotCount: 2 } },
   {
     type: 'gridDeleteRow',
     defaultParams: { gCols: 4, gRows: 4, rowIndex: 1 },
@@ -303,7 +313,7 @@ function orderIncomingEdgesForVerticalStitch(
   allNodes: WorkflowNode[]
 ): WorkflowEdge[] {
   const byId = new Map(allNodes.map((n) => [n.id, n]))
-  const list = edges.filter((e) => e.target === targetId && e.targetPort == null)
+  const list = edges.filter((e) => e.target === targetId && (!e.targetPort || e.targetPort === ''))
   return [...list].sort((ea, eb) => {
     const na = byId.get(ea.source) as GraphNode | undefined
     const nb = byId.get(eb.source) as GraphNode | undefined
@@ -486,13 +496,21 @@ async function executeDagNode(
     return doubleBackgroundMatteFromBlobs(ba, bb, tolerance, edgeContrast)
   }
   if (n.type === 'simpleStitchVertical') {
-    const ordered = orderIncomingEdgesForVerticalStitch(n.id, edges, allNodes)
-    if (ordered.length === 0) throw new Error('DAG_STITCH_VERTICAL_NO_IN')
-    const blobs = ordered.map((e) => blobMap.get(e.source)).filter((b): b is Blob => !!b)
-    if (blobs.length !== ordered.length) throw new Error('DAG_STITCH_VERTICAL_BLOBS')
-    return stitchVerticalImageBlobs(blobs)
+    const ins = edges.filter((e) => e.target === n.id)
+    if (ins.length === 0) throw new Error('DAG_STITCH_VERTICAL_NO_IN')
+    const mode = Math.max(0, Math.min(2, Math.round(n.params.stitchMode ?? 0))) as 0 | 1 | 2
+    const allLegacy = ins.every((e) => !e.targetPort || e.targetPort === '')
+    const orderedEdges = allLegacy
+      ? orderIncomingEdgesForVerticalStitch(n.id, edges, allNodes)
+      : [...ins].sort((a, b) => parseInt(a.targetPort!.slice(2), 10) - parseInt(b.targetPort!.slice(2), 10))
+    if (!allLegacy && !ins.every((e) => isStitchSlotPort(e.targetPort))) {
+      throw new Error('DAG_STITCH_MIXED_PORTS')
+    }
+    const blobs = orderedEdges.map((e) => blobMap.get(e.source)).filter((b): b is Blob => !!b)
+    if (blobs.length !== orderedEdges.length) throw new Error('DAG_STITCH_VERTICAL_BLOBS')
+    return stitchImageBlobs(blobs, mode)
   }
-  const inc = edges.filter((e) => e.target === n.id && e.targetPort == null)
+  const inc = edges.filter((e) => e.target === n.id && (!e.targetPort || e.targetPort === ''))
   if (inc.length === 1) {
     const b = blobMap.get(inc[0]!.source)
     if (!b) throw new Error('DAG_PRED_MISSING')
@@ -586,6 +604,9 @@ export type DagGraphError =
   | 'INPUT_IMAGE_NOT_HEAD'
   | 'TARGETED_HEAD_MIX'
   | 'STITCH_VERTICAL_NO_INPUT'
+  | 'STITCH_MIXED_PORTS'
+  | 'STITCH_SLOT_DUPLICATE'
+  | 'STITCH_SLOT_RANGE'
 
 /** 校验含双输入节点的 DAG：单出、双入端口、唯一汇点、可达、拓扑序 */
 export function validateDagWorkflow(
@@ -624,13 +645,28 @@ export function validateDagWorkflow(
       if (new Set(ports).size !== 2) return { ok: false, reason: 'DOUBLE_BG_PORTS' }
     } else if (n.type === 'simpleStitchVertical') {
       if (ins.length < 1) return { ok: false, reason: 'STITCH_VERTICAL_NO_INPUT' }
-      for (const e of ins) {
-        if (e.targetPort != null) return { ok: false, reason: 'INVALID_TARGET_PORT' }
+      const allLegacy = ins.every((e) => !e.targetPort || e.targetPort === '')
+      const allSlotted = ins.every((e) => isStitchSlotPort(e.targetPort))
+      if (!allLegacy && !allSlotted) return { ok: false, reason: 'STITCH_MIXED_PORTS' }
+      if (allSlotted) {
+        const slots = ins.map((e) => parseInt(e.targetPort!.slice(2), 10))
+        if (slots.some((s) => !Number.isFinite(s) || s < 1)) {
+          return { ok: false, reason: 'INVALID_TARGET_PORT' }
+        }
+        if (new Set(slots).size !== slots.length) return { ok: false, reason: 'STITCH_SLOT_DUPLICATE' }
+        const declared = getStitchInputSlotCount(n)
+        if (slots.some((s) => s > declared)) return { ok: false, reason: 'STITCH_SLOT_RANGE' }
+      } else {
+        for (const e of ins) {
+          if (e.targetPort != null && e.targetPort !== '') {
+            return { ok: false, reason: 'INVALID_TARGET_PORT' }
+          }
+        }
       }
     } else {
       if (ins.length > 1) return { ok: false, reason: 'INVALID_MULTI_INPUT' }
       for (const e of ins) {
-        if (e.targetPort != null) return { ok: false, reason: 'INVALID_TARGET_PORT' }
+        if (e.targetPort != null && e.targetPort !== '') return { ok: false, reason: 'INVALID_TARGET_PORT' }
       }
     }
     if (n.type === 'workflowInputImage' && ins.length > 0) {
@@ -984,8 +1020,10 @@ export function parseWorkflowGraph(text: string): {
       const ex = e as unknown as Record<string, unknown>
       if (typeof ex.source !== 'string' || typeof ex.target !== 'string') continue
       const tp = ex.targetPort
-      const targetPort =
-        tp === 'inA' || tp === 'inB' ? (tp as WorkflowInputPort) : undefined
+      let targetPort: string | undefined
+      if (typeof tp === 'string') {
+        if (tp === 'inA' || tp === 'inB' || /^in\d+$/.test(tp)) targetPort = tp
+      }
       edges.push({
         id:
           typeof ex.id === 'string'

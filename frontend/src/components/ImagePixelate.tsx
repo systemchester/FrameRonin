@@ -269,8 +269,8 @@ export default function ImagePixelate() {
   const [originalUrl, setOriginalUrl] = useState<string | null>(null)
   const [pixelSize, setPixelSize] = useState(8)
   const [mergeNearbyStrength, setMergeNearbyStrength] = useState(40)
-  const [advUpscale, setAdvUpscale] = useState(5)
-  const [advColors, setAdvColors] = useState(32)
+  const [advUpscale, setAdvUpscale] = useState(4)
+  const [advColors, setAdvColors] = useState(64)
   const [advScaleResult, setAdvScaleResult] = useState(1)
   const [advTransparent, setAdvTransparent] = useState(false)
   const [advStatusKey, setAdvStatusKey] = useState<string | null>(null)
@@ -517,7 +517,7 @@ export default function ImagePixelate() {
                       onChange={(v) => setAdvUpscale(v as number)}
                       style={{ width: 200, marginRight: 16 }}
                     />
-                    <InputNumber min={2} max={7} value={advUpscale} onChange={(v) => setAdvUpscale(v ?? 5)} style={{ width: 90 }} />
+                    <InputNumber min={2} max={7} value={advUpscale} onChange={(v) => setAdvUpscale(v ?? 4)} style={{ width: 90 }} />
                   </Space>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>{t('pixelateAdvancedUpscaleHint')}</Text>
                 </div>
@@ -531,7 +531,7 @@ export default function ImagePixelate() {
                       onChange={setAdvColors}
                       style={{ width: 200, marginRight: 16 }}
                     />
-                    <InputNumber min={4} max={256} value={advColors} onChange={(v) => setAdvColors(v ?? 32)} style={{ width: 90 }} />
+                    <InputNumber min={4} max={256} value={advColors} onChange={(v) => setAdvColors(v ?? 64)} style={{ width: 90 }} />
                   </Space>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>{t('pixelateAdvancedColorsHint')}</Text>
                 </div>

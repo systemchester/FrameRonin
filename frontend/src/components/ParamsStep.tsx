@@ -537,7 +537,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
   useEffect(() => {
     if (mattedFrames.length > 0) {
       const cols = Math.min(12, Math.max(4, Math.ceil(Math.sqrt(mattedFrames.length))))
-      form.setFieldsValue({ columns: cols, padding: 4, spacing: 0 })
+      form.setFieldsValue({ columns: cols, padding: 0, spacing: 0 })
     }
   }, [mattedFrames.length, form])
 
@@ -551,7 +551,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
     if (mattedFrames.length === 0) return
     const targetW = form.getFieldValue('target_w') ?? videoSize?.w ?? 256
     const targetH = form.getFieldValue('target_h') ?? videoSize?.h ?? 256
-    const padding = form.getFieldValue('padding') ?? 4
+    const padding = form.getFieldValue('padding') ?? 0
     const spacing = form.getFieldValue('spacing') ?? 0
     const columns = form.getFieldValue('columns') ?? 4
     const timestamps = selectedFrameIndices.map((idx) => extractedFrames[idx]?.timestamp ?? 0)
@@ -965,7 +965,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
         target_w: params.target_size?.w ?? 256,
         target_h: params.target_size?.h ?? 256,
         transparent: params.transparent ?? true,
-        padding: params.padding ?? 4,
+        padding: params.padding ?? 0,
         spacing: params.spacing ?? 0,
         layout_mode: params.layout_mode ?? 'fixed_columns',
         columns: params.columns ?? 4,
@@ -981,7 +981,7 @@ export default function ParamsStep({ file, params, onParamsChange }: Props) {
           max_frames: (v.max_frames as number) ?? 300,
           target_size: { w: (v.target_w as number) ?? 256, h: (v.target_h as number) ?? 256 },
           transparent: (v.transparent as boolean) ?? true,
-          padding: (v.padding as number) ?? 4,
+          padding: (v.padding as number) ?? 0,
           spacing: (v.spacing as number) ?? 0,
           layout_mode: (v.layout_mode as 'fixed_columns' | 'auto_square') ?? 'fixed_columns',
           columns: (v.columns as number) ?? 4,

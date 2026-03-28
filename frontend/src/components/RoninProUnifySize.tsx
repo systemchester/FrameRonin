@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, InputNumber, message, Space, Typography, Upload } from 'antd'
 import { DownloadOutlined } from '@ant-design/icons'
-import type { UploadFile } from 'antd'
+import type { UploadFile, UploadProps } from 'antd'
 import { useLanguage } from '../i18n/context'
 import StashableImage from './StashableImage'
 import StashDropZone from './StashDropZone'
@@ -129,6 +129,16 @@ export default function RoninProUnifySize() {
     }
   }
 
+  /** 用 onChange 的 fileList 顺序同步，避免多文件拖拽时 beforeUpload 逐文件追加导致顺序颠倒 */
+  const handleUploadChange: UploadProps['onChange'] = ({ fileList }) => {
+    const next: File[] = []
+    for (const item of fileList) {
+      const o = item.originFileObj
+      if (o instanceof File) next.push(o)
+    }
+    setFiles(next)
+  }
+
   const downloadResult = () => {
     if (!resultUrl) return
     const a = document.createElement('a')
@@ -146,15 +156,17 @@ export default function RoninProUnifySize() {
         <Dragger
           accept={IMAGE_ACCEPT.join(',')}
           multiple
-          fileList={files.map((f, i) => ({ uid: `u-${i}`, name: f.name } as UploadFile))}
-          beforeUpload={(f) => {
-            setFiles((prev) => [...prev, f])
-            return false
-          }}
-          onRemove={(file) => {
-            const idx = files.findIndex((_, i) => `u-${i}` === file.uid)
-            if (idx >= 0) setFiles((prev) => prev.filter((_, i) => i !== idx))
-          }}
+          fileList={files.map(
+            (f, i) =>
+              ({
+                uid: `${f.name}-${f.size}-${f.lastModified}-${i}`,
+                name: f.name,
+                status: 'done',
+                originFileObj: f as UploadFile['originFileObj'],
+              }) as UploadFile,
+          )}
+          beforeUpload={() => false}
+          onChange={handleUploadChange}
         >
           <p className="ant-upload-text">{t('roninProUnifySizeUploadHint')}</p>
         </Dragger>
