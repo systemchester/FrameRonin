@@ -12,7 +12,7 @@ export type MapStudioMode = 'stitch' | 'obstacles'
 const mapStudioCopy = {
   en: {
     back: 'Back Home',
-    kicker: 'Droi AI Map Tool',
+    kicker: 'Droi-game-tool Map Tool',
     stitchTitle: 'Map Stitch',
     stitchSubtitle: 'Upload a center map and extend it in four directions with softened seams.',
     obstaclesTitle: 'Obstacle Editor',
@@ -22,7 +22,7 @@ const mapStudioCopy = {
   },
   zh: {
     back: '返回首页',
-    kicker: 'Droi AI 地图工具',
+    kicker: 'Droi-game-tool 地图工具',
     stitchTitle: '拼接底图',
     stitchSubtitle: '上传中心地图，按四方向拼接底图并自动柔化接缝。',
     obstaclesTitle: '阻挡物编辑',
@@ -32,7 +32,7 @@ const mapStudioCopy = {
   },
   ja: {
     back: 'ホームへ戻る',
-    kicker: 'Droi AI マップツール',
+    kicker: 'Droi-game-tool マップツール',
     stitchTitle: 'マップ結合',
     stitchSubtitle: '中央マップを読み込み、四方向に拡張して継ぎ目をなじませます。',
     obstaclesTitle: '障害物編集',

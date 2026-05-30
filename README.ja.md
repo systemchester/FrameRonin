@@ -1,4 +1,4 @@
-# FrameRonin - 動画→フレーム · マット · スプライトシート **V3**
+# Droi-game-tool - 動画→フレーム · マット · スプライトシート **V3**
 
 [中文](README.md) | [English](README.en.md) | [日本語](README.ja.md)
 

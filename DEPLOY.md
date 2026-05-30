@@ -1,4 +1,4 @@
-# FrameRonin **V3** — 部署说明
+# Droi-game-tool **V3** — 部署说明
 
 产品能力与版本说明见根目录 [README.md](./README.md)；功能扩展与已实现对照见 [DEV_PLAN_extensions.md](./DEV_PLAN_extensions.md)。
 

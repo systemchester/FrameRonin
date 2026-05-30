@@ -22,7 +22,7 @@ type HomeEntry = {
 
 const homeCopy = {
   en: {
-    eyebrow: 'Droi AI Tool Hub',
+    eyebrow: 'Droi-game-tool',
     title: 'Choose a production tool',
     subtitle: 'Map stitching, obstacle collision editing, AI background removal, and character action-pack creation live here.',
     stitchTitle: 'Map Stitch',
@@ -35,7 +35,7 @@ const homeCopy = {
     motionDesc: 'Upload a base character, generate action candidates, align weapons and effects, then export a game-ready pack.',
   },
   zh: {
-    eyebrow: 'Droi AI 工具中心',
+    eyebrow: 'Droi-game-tool',
     title: '选择一个生产工具',
     subtitle: '地图拼接、阻挡物碰撞、AI 去背和人物动作包制作都集中在这里。',
     stitchTitle: '拼接底图',
@@ -48,7 +48,7 @@ const homeCopy = {
     motionDesc: '上传基础人物，生成动作候选，配置武器与特效后导出游戏可用动作包。',
   },
   ja: {
-    eyebrow: 'Droi AI ツールハブ',
+    eyebrow: 'Droi-game-tool',
     title: '制作ツールを選択',
     subtitle: 'マップ結合、障害物編集、AI 背景除去、キャラクター動作パック制作をここに集約しています。',
     stitchTitle: 'マップ結合',

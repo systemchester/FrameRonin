@@ -1,4 +1,4 @@
-# FrameRonin 前端（V3）
+# Droi-game-tool 前端（V3）
 
 React + Vite + TypeScript + Ant Design。业务入口与模块说明以仓库根目录 **[README.md](../README.md)** 为准（中 / en / ja）。
 
@@ -29,4 +29,4 @@ npm run dev
 
 ## 上游模板说明
 
-本目录最初基于 Vite 官方 React-TS 模板生成；当前文档以 FrameRonin 业务为准，ESLint 进阶配置可参考 [Vite 文档](https://vite.dev/) 与 [typescript-eslint](https://typescript-eslint.io/)。
+本目录最初基于 Vite 官方 React-TS 模板生成；当前文档以 Droi-game-tool 业务为准，ESLint 进阶配置可参考 [Vite 文档](https://vite.dev/) 与 [typescript-eslint](https://typescript-eslint.io/)。

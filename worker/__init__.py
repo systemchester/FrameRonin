@@ -1,1 +1,1 @@
-"""PixelWork RQ Worker"""
+"""Droi-game-tool RQ Worker"""

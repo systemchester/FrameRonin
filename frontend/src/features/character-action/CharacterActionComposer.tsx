@@ -92,7 +92,7 @@ const ANALYSIS_MAX_POLLS = 1800
 const characterCopy = {
   en: {
     back: 'Back Home',
-    kicker: 'Droi AI Character Action',
+    kicker: 'Droi-game-tool Character Action',
     title: 'Character Action Pack Studio',
     subtitle: 'Build game-ready action packs from uploaded or AI-generated frames, with Godot SpriteFrames-style organization.',
     autoMatte: 'Auto background removal',
@@ -198,7 +198,7 @@ const characterCopy = {
   },
   zh: {
     back: '返回首页',
-    kicker: 'Droi AI 人物动作',
+    kicker: 'Droi-game-tool 人物动作',
     title: '人物动作包制作',
     subtitle: '从上传帧或 AI 生成帧制作游戏可用动作包，并按 Godot SpriteFrames 思路组织动作。',
     autoMatte: '自动抠图去背',
@@ -304,7 +304,7 @@ const characterCopy = {
   },
   ja: {
     back: 'ホームへ戻る',
-    kicker: 'Droi AI キャラクター動作',
+    kicker: 'Droi-game-tool キャラクター動作',
     title: 'キャラクター動作パック制作',
     subtitle: 'アップロードまたは AI 生成フレームから、Godot SpriteFrames 形式に近いゲーム用動作パックを作成します。',
     autoMatte: '自動背景除去',

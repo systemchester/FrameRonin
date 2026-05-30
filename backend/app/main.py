@@ -523,7 +523,7 @@ def _run_character_action_analysis(job_id: str, content: bytes, params: dict):
         )
 
 app = FastAPI(
-    title="PixelWork - 视频转序列帧",
+    title="Droi-game-tool API",
     version="1.6",
     description="上传视频后自动提取帧、抠图处理，生成序列帧 Sprite Sheet",
 )
@@ -559,7 +559,7 @@ async def startup():
 async def root():
     return {
         "ok": True,
-        "service": "FrameRonin API",
+        "service": "Droi-game-tool API",
         "frontend": "http://127.0.0.1:5173",
         "docs": "http://127.0.0.1:8000/docs",
     }

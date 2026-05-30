@@ -201,7 +201,7 @@ export default function DroiArtMatte({ onBack }: { onBack: () => void }) {
           {copy.back}
         </Button>
         <div className="droi-matte-heading">
-          <Text className="droi-matte-kicker">Droi AI Matte</Text>
+          <Text className="droi-matte-kicker">Droi-game-tool Matte</Text>
           <Title level={2}>{copy.title}</Title>
           <Text className="droi-matte-subtitle">{copy.subtitle}</Text>
         </div>
