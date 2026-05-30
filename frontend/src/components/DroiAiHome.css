@@ -1,0 +1,251 @@
+.droi-home {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 78% 10%, rgba(116, 229, 255, 0.16), transparent 31%),
+    radial-gradient(circle at 14% 82%, rgba(240, 147, 251, 0.14), transparent 35%),
+    linear-gradient(180deg, #10162f 0%, #0a1024 46%, #060b18 100%);
+}
+
+.droi-home,
+.droi-home * {
+  box-sizing: border-box;
+}
+
+.droi-home-bg {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.droi-home-bg-a {
+  top: -240px;
+  right: -160px;
+  width: 720px;
+  height: 720px;
+  background: radial-gradient(circle, rgba(116, 229, 255, 0.18), transparent 68%);
+}
+
+.droi-home-bg-b {
+  bottom: -220px;
+  left: -170px;
+  width: 620px;
+  height: 620px;
+  background: radial-gradient(circle, rgba(240, 147, 251, 0.15), transparent 70%);
+  filter: blur(8px);
+}
+
+.droi-home-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(116, 229, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(180deg, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+
+.droi-home-inner {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 64px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 34px;
+}
+
+.droi-home-language {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #e9fbff;
+  background: rgba(6, 11, 24, 0.72);
+  border: 1px solid rgba(116, 229, 255, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(14px);
+}
+
+@media (min-width: 1229px) {
+  .droi-home-language {
+    right: calc(614px - 50vw);
+  }
+}
+
+.droi-home-heading {
+  max-width: 780px;
+}
+
+.droi-home-heading span {
+  display: block;
+  margin-bottom: 8px;
+  color: #74e5ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.droi-home-heading h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 44px;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.08;
+  background: linear-gradient(90deg, #ffffff 0%, #b9c6ff 48%, #74e5ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.droi-home-heading p {
+  max-width: 720px;
+  margin: 14px 0 0;
+  color: #aeb4cf;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.droi-home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.droi-home-card {
+  position: relative;
+  min-height: 250px;
+  padding: 24px;
+  overflow: hidden;
+  text-align: left;
+  color: #ffffff;
+  cursor: pointer;
+  border: 1px solid rgba(116, 229, 255, 0.2);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(16, 22, 47, 0.82), rgba(10, 16, 36, 0.64)),
+    rgba(10, 16, 36, 0.58);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(22px);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.droi-home-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(116, 229, 255, 0.12), transparent 42%, rgba(240, 147, 251, 0.08));
+  opacity: calc(0.62 + (var(--entry-index) * 0.04));
+}
+
+.droi-home-card:hover,
+.droi-home-card:focus-visible {
+  border-color: rgba(116, 229, 255, 0.72);
+  box-shadow:
+    0 0 0 3px rgba(116, 229, 255, 0.13),
+    0 28px 80px rgba(0, 0, 0, 0.4);
+  outline: none;
+  transform: translateY(-3px);
+}
+
+.droi-home-card-label,
+.droi-home-card-icon,
+.droi-home-card strong,
+.droi-home-card small {
+  position: relative;
+  z-index: 1;
+}
+
+.droi-home-card-label {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  color: #06101d;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: #74e5ff;
+}
+
+.droi-home-card-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin-top: 34px;
+  place-items: center;
+  color: #74e5ff;
+  font-size: 30px;
+  border: 1px solid rgba(116, 229, 255, 0.3);
+  border-radius: 18px;
+  background: rgba(116, 229, 255, 0.08);
+  box-shadow: 0 0 32px rgba(116, 229, 255, 0.16);
+}
+
+.droi-home-card strong {
+  display: block;
+  margin-top: 18px;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.droi-home-card small {
+  display: block;
+  margin-top: 10px;
+  color: #aeb4cf;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1060px) {
+  .droi-home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .droi-home-inner {
+    width: min(100% - 28px, 520px);
+    padding: 34px 0;
+  }
+
+  .droi-home-language {
+    position: static;
+    align-self: flex-end;
+    margin-bottom: 8px;
+  }
+
+  .droi-home-heading h2 {
+    font-size: 32px;
+  }
+
+  .droi-home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .droi-home-card {
+    min-height: 210px;
+  }
+}

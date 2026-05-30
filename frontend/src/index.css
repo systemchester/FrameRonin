@@ -2,8 +2,8 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #3d3428;
-  background-color: #c9bfb0;
+  color: #ffffff;
+  background-color: #060b18;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -22,17 +22,4 @@ body {
 
 #root {
   min-height: 100vh;
-}
-
-/* RoninPro 蓝图「自定义均分重组」：格内数字框不出现滚动条 */
-.ronin-blueprint-rearrange-cell.ant-input-number {
-  overflow: hidden;
-  max-width: 100%;
-}
-.ronin-blueprint-rearrange-cell .ant-input-number-input-wrap {
-  overflow: hidden;
-}
-.ronin-blueprint-rearrange-cell .ant-input-number-input {
-  overflow: hidden;
-  text-overflow: clip;
 }

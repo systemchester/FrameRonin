@@ -81,7 +81,7 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  base: process.env.GITHUB_ACTIONS ? '/FrameRonin/' : '/',
+  base: '/',
   server: {
     port: 5173,
     proxy: {
