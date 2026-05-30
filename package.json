@@ -1,5 +1,5 @@
 {
-  "name": "pixelwork",
+  "name": "droi-game-tool",
   "private": true,
   "scripts": {
     "deploy:ronin": "cd contracts && npm run deploy:ronin",

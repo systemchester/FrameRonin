@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef } f
 import type { Lang } from './locales'
 import { t as tFn } from './locales'
 
-const STORAGE_KEY = 'frameronin_lang'
+const STORAGE_KEY = 'frameronin_lang_v2'
 
 const HTML_LANG: Record<Lang, string> = { zh: 'zh-CN', en: 'en', ja: 'ja' }
 
@@ -18,7 +18,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const s = localStorage.getItem(STORAGE_KEY)
       if (s === 'zh' || s === 'en' || s === 'ja') return s
     } catch { /* ignore */ }
-    return 'zh'
+    return 'en'
   })
 
   const setLang = useCallback((l: Lang) => {

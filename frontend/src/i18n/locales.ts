@@ -3,7 +3,7 @@ export type Lang = 'zh' | 'en' | 'ja'
 export const locales: Record<Lang, Record<string, string>> = {
   zh: {
     // App / SEO
-    pageTitle: 'FrameRonin - 视频转序列帧',
+    pageTitle: 'Droi-game-tool',
     pageDescription: '将视频提取为序列帧、抠图去背、生成 Sprite Sheet，支持透明 PNG 与 ZIP 打包下载。',
     // App
     subtitle: '视频转序列帧 · 抠图 · Sprite Sheet',
@@ -11,6 +11,9 @@ export const locales: Record<Lang, Record<string, string>> = {
     moduleControlTestDesc: '功能占位，后续实现',
     moduleControlTestTopdown: 'topdown测试场景',
     moduleControlTestArcade: '街机测试场景',
+    homeGameTools: '游戏工具',
+    moduleMapStudio: '地图阻挡物编辑',
+    moduleMapStudioDesc: '上传底图，自动抠图去背，拖动摆放阻挡物并导出碰撞 JSON',
     moduleMapStitch: '地图拼接',
     controlTestPlaceholder: '功能开发中',
     controlTestHint: '拖入角色 Sprite Sheet（252×252 像素，与预设区域匹配），使用键盘控制',
@@ -620,10 +623,10 @@ export const locales: Record<Lang, Record<string, string>> = {
     roninProWorkflowAtRow: '在第几行前插入（1=最上沿；=行数+1 表示紧贴最后一行之下）',
     roninProWorkflowAtCol: '在第几列前插入（1=最左；=列数+1 表示紧贴最后一列之右）',
     roninProWorkflowExpandBandAuto: '透明带尺寸：扩行=单行高，扩列=单列宽（由当前图÷行列数自动算，无需填像素）。',
-    assetsAndSourceHint: 'FrameRonin 相关素材与游戏源码的分享入口。',
+    assetsAndSourceHint: 'Droi-game-tool 相关素材与游戏源码的分享入口。',
     assetsAndSourceCode: '源码',
     assetsAndSourceRepo: 'GitHub 仓库',
-    assetsAndSourceRepoDesc: 'FrameRonin 项目开源地址',
+    assetsAndSourceRepoDesc: 'Droi-game-tool 项目开源地址',
     assetsAndSourceDownloads: '素材',
     assetsAndSourceReleases: '01-美术',
     assetsAndSourceReleasesDesc: '角色、武器、建筑、动物、特效等 Sprite 素材',
@@ -1200,13 +1203,16 @@ export const locales: Record<Lang, Record<string, string>> = {
     navReference: '学习参考',
   },
   en: {
-    pageTitle: 'FrameRonin - Video to Sprite Sheet',
+    pageTitle: 'Droi-game-tool',
     pageDescription: 'Extract frames from video, remove background, generate Sprite Sheet. Supports transparent PNG and ZIP download.',
     subtitle: 'Video to Frames · Matte · Sprite Sheet',
     moduleControlTest: 'Control Test',
     moduleControlTestDesc: 'Placeholder, to be implemented',
     moduleControlTestTopdown: 'topdown Test Scene',
     moduleControlTestArcade: 'Arcade Test Scene',
+    homeGameTools: 'Game Tools',
+    moduleMapStudio: 'Obstacle Map Editor',
+    moduleMapStudioDesc: 'Upload a map, auto-remove obstacle backgrounds, place them, and export collision JSON',
     moduleMapStitch: 'Map Stitch',
     controlTestPlaceholder: 'Coming soon',
     controlTestHint: 'Drag in character Sprite Sheet (252×252px, preset regions). Use keyboard to control.',
@@ -1824,10 +1830,10 @@ export const locales: Record<Lang, Record<string, string>> = {
     roninProWorkflowAtRow: 'Insert before row N (1 = top; rows+1 = after last row)',
     roninProWorkflowAtCol: 'Insert before column N (1 = left; cols+1 = after last column)',
     roninProWorkflowExpandBandAuto: 'Band size: expand row = one row height, expand col = one column width (auto from image ÷ grid).',
-    assetsAndSourceHint: 'Share links for FrameRonin assets and game source.',
+    assetsAndSourceHint: 'Share links for Droi-game-tool assets and game source.',
     assetsAndSourceCode: 'Source',
     assetsAndSourceRepo: 'GitHub Repository',
-    assetsAndSourceRepoDesc: 'FrameRonin open-source project',
+    assetsAndSourceRepoDesc: 'Droi-game-tool open-source project',
     assetsAndSourceDownloads: 'Assets',
     assetsAndSourceReleases: '01-Art',
     assetsAndSourceReleasesDesc: 'Characters, weapons, buildings, animals, effects and more sprite assets',
@@ -2393,13 +2399,16 @@ export const locales: Record<Lang, Record<string, string>> = {
     navReference: 'Learning',
   },
   ja: {
-    pageTitle: 'FrameRonin - 動画→スプライト',
+    pageTitle: 'Droi-game-tool',
     pageDescription: '動画からフレーム抽出・背景除去・スプライトシート生成。透明PNG・ZIP対応。',
     subtitle: '動画→フレーム · マット · スプライト',
     moduleControlTest: 'コントロールテスト',
     moduleControlTestDesc: 'プレースホルダー、後で実装',
     moduleControlTestTopdown: 'topdownテストシーン',
     moduleControlTestArcade: 'アーケードテストシーン',
+    homeGameTools: 'ゲームツール',
+    moduleMapStudio: '障害物マップ編集',
+    moduleMapStudioDesc: 'マップを読み込み、障害物を自動背景除去して配置し、当たり判定 JSON を出力',
     moduleMapStitch: 'マップ結合',
     controlTestPlaceholder: '開発中',
     controlTestHint: 'キャラ Sprite Sheet（252×252px）をドロップ。キーボードで操作',
@@ -3018,10 +3027,10 @@ export const locales: Record<Lang, Record<string, string>> = {
     roninProWorkflowAtRow: '何行目の前に挿入（1=最上、行数+1=最下行の下）',
     roninProWorkflowAtCol: '何列目の前に挿入（1=最左、列数+1=最右列の右）',
     roninProWorkflowExpandBandAuto: '透明帯のサイズ：拡行=1行の高さ、拡列=1列の幅（画像÷格子で自動）。',
-    assetsAndSourceHint: 'FrameRonin 関連素材とゲームソースの共有入口。',
+    assetsAndSourceHint: 'Droi-game-tool 関連素材とゲームソースの共有入口。',
     assetsAndSourceCode: 'ソース',
     assetsAndSourceRepo: 'GitHub リポジトリ',
-    assetsAndSourceRepoDesc: 'FrameRonin オープンソースプロジェクト',
+    assetsAndSourceRepoDesc: 'Droi-game-tool オープンソースプロジェクト',
     assetsAndSourceDownloads: '素材',
     assetsAndSourceReleases: '01-美術',
     assetsAndSourceReleasesDesc: 'キャラ、武器、建築、動物、エフェクト等の Sprite 素材',
@@ -3589,7 +3598,7 @@ export const locales: Record<Lang, Record<string, string>> = {
 }
 
 export function t(lang: Lang, key: string, params?: Record<string, string | number>): string {
-  let s = locales[lang][key] ?? locales.zh[key] ?? key
+  let s = locales[lang][key] ?? locales.en[key] ?? locales.zh[key] ?? key
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       s = s.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))

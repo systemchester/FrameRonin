@@ -66,12 +66,14 @@ export type AppMode =
   | 'expandshrink'
   | 'matte'
   | 'geminiwatermark'
+  | 'characterAction'
   | 'nanobananaFullChar'
   | 'seedanceWatermark'
   | 'assetsAndSource'
   | 'controlTest'
   | 'controlTestArcade'
   | 'roninPro'
+  | 'mapStudio'
   | 'mapStitch'
   | 'infiniteMap'
   | 'aiPixelAnimals'
@@ -86,7 +88,35 @@ export default function ModeSelector({ onSelect }: Props) {
   const { t } = useLanguage()
   return (
     <>
+      <div style={{ marginTop: 8, marginBottom: 10 }}>
+        <Text strong style={{ color: '#3d3428', fontSize: 16 }}>{t('homeGameTools')}</Text>
+      </div>
       <Row gutter={24} style={{ marginTop: 8, marginBottom: 24 }} align="stretch">
+        <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
+          <Card
+            hoverable
+            onClick={() => onSelect('mapStudio')}
+            styles={{ body: HOME_CARD_BODY_LARGE }}
+            style={{
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderColor: '#9a8b78',
+              background: 'linear-gradient(135deg, #ede6dc 0%, #e8dfd4 100%)',
+              borderWidth: 2,
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
+            }}
+          >
+            <AppstoreOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
+            <div style={{ lineHeight: 1.4 }}>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleMapStudio')}</Text>
+            </div>
+            <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4, ...HOME_DESC_TEXT }}>
+              {t('moduleMapStudioDesc')}
+            </Text>
+          </Card>
+        </Col>
         <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <Card
             hoverable
@@ -140,7 +170,7 @@ export default function ModeSelector({ onSelect }: Props) {
         <Col xs={24} sm={12} md={6} style={{ display: 'flex' }}>
           <Card
             hoverable
-            onClick={() => onSelect('video')}
+            onClick={() => onSelect('infiniteMap')}
             styles={{ body: HOME_CARD_BODY_LARGE }}
             style={{
               textAlign: 'center',
@@ -153,12 +183,12 @@ export default function ModeSelector({ onSelect }: Props) {
               width: '100%',
             }}
           >
-            <VideoCameraOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
+            <EnvironmentOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
             <div style={{ lineHeight: 1.4 }}>
-              <Text strong style={{ fontSize: 15 }}>{t('moduleVideo')}</Text>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleInfiniteMap')}</Text>
             </div>
             <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4, ...HOME_DESC_TEXT }}>
-              {t('moduleVideoDesc')}
+              {t('moduleInfiniteMapDesc')}
             </Text>
           </Card>
         </Col>
@@ -692,7 +722,7 @@ export default function ModeSelector({ onSelect }: Props) {
         <Col xs={24} md={12} style={{ display: 'flex' }}>
           <Card
             hoverable
-            onClick={() => onSelect('infiniteMap')}
+            onClick={() => onSelect('video')}
             styles={{ body: HOME_CARD_BODY_LARGE_GROW }}
             style={{
               textAlign: 'center',
@@ -704,12 +734,12 @@ export default function ModeSelector({ onSelect }: Props) {
               width: '100%',
             }}
           >
-            <EnvironmentOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
+            <VideoCameraOutlined style={{ fontSize: 36, color: '#b55233', marginBottom: 12, display: 'block' }} />
             <div style={{ lineHeight: 1.4 }}>
-              <Text strong style={{ fontSize: 15 }}>{t('moduleInfiniteMap')}</Text>
+              <Text strong style={{ fontSize: 15 }}>{t('moduleVideo')}</Text>
             </div>
             <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12, lineHeight: 1.4, ...HOME_DESC_TEXT }}>
-              {t('moduleInfiniteMapDesc')}
+              {t('moduleVideoDesc')}
             </Text>
           </Card>
         </Col>

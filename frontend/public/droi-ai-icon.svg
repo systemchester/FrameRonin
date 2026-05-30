@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="droi-ai-g" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#74E5FF"/>
+      <stop offset="0.52" stop-color="#667EEA"/>
+      <stop offset="1" stop-color="#F093FB"/>
+    </linearGradient>
+    <filter id="droi-ai-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#060B18"/>
+  <path d="M18 14h17c9 0 15 7 15 18s-6 18-15 18H18V14Zm10 10v16h7c4 0 7-3 7-8s-3-8-7-8h-7Z" fill="url(#droi-ai-g)" filter="url(#droi-ai-glow)"/>
+  <path d="M15 50h34" stroke="#74E5FF" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+</svg>

@@ -26,6 +26,8 @@ frontend/dist
 # User uploads / runtime data (禁止提交到任何远程)
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/outputs/
+.codex-runlogs/
 
 # IDE
 .vscode
